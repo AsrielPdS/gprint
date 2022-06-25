@@ -1,0 +1,21 @@
+{
+  "name": "book",
+  "version": "1.0.0",
+  "description": "book",
+  "main": "book.js",
+  "homepage": "https://github.com/AsrielPires/book",
+  "license": "ISC",
+  "author": {
+    "name": "Asriel Pires",
+    "email": "bebether@gmail.com"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },    
+  "dependencies": {
+    "format": "file:../format",
+    "galho": "file:../galho",
+    "handler": "file:../handler"
+  }
+}
