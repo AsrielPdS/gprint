@@ -1,4 +1,4 @@
-import { Boxes as Box, CLy, ICol, IImgBox, IPBox, IPHBox, IRow, ISymbolBox, ITableBox, ST, TAlign, TBoxes } from "../book";
+import { Boxes as Box, CLy, ICol, IImgBox, IPBox, IPHBox, IRow, ISymbolBox, ITableBox, ST, TAlign, TBoxes } from "../book.js";
 declare type num = number;
 declare type str = string;
 export declare const cut: () => Box;

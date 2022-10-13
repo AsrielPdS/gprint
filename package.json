@@ -12,10 +12,8 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean"
-  },    
+  },
   "dependencies": {
-    "format": "file:../format",
-    "galho": "file:../galho",
-    "handler": "file:../handler"
+    "galho": "file:../galho"
   }
 }

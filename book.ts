@@ -1,92 +1,49 @@
-import { div, g, S } from "galho";
-import { Properties } from "galho/css";
-import { height, isS, rect } from "galho/s";
+import { div, empty, g, S } from "galho";
+import { Properties } from "galho/css.js";
+import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
 
-type Key = string | number;
-interface Dic<T = any> { [key: string]: T; }
-type Task<T> = T | Promise<T>;
 
 const hasProp = (obj: object) => Object.keys(obj).length;
 
-export const enum C {
-  empty = "empty",
-  body = "body",
-  watermark = "wm",
-
-  input = "in",
-  bookMedia = "book-media",
-
-  box = 'box',
-  sheet = 'sheet',
-  book = 'bookeditor',
-  row = 'book-row',
-  col = 'book-col',
-  table = "book-table",
-  tableGroup = "book-table-group",
-  block = "block",
-  grid = "grid",
-  parent = "parent",
-  stack = "stack",
-  img = "img",
-  hr = "hr",
-  newBox = "new-box",
-  tr = "book-tr",
-  th = "book-th",
-  bubble = "bubble"
-}
 /**book item type */
 export type BT = "p" | "row" | "col" | "tr" | "th" | "block" | "ph" | "hr" | "table" | "tg" | "img" | "symbol" | "grid" | "custom" | "graphic" | "new";
 
 /**book span type */
-export type ST = "t" | "s" | "img";
-type Expression = string;
+export type ST = "t" | "e" | "img";
 /* ************************************************************** */
 /* *********************MAIN INTERFACE*************************** */
 /* ************************************************************** */
 export interface Context {
-  dt?: unknown;
-  temp?: Dic<unknown>;
-  fmt?(value: unknown, exp: string): string;
-  calc?(value: Expression, ctx: Scope, index?: number): unknown;
-  img?(path: string, args?: Dic): string;
-  symb?(src: string): Boxes
-  parts?: S[];
-  wait?: Promise<any>[];
+  dt?: unk;
+  temp?: Dic<unk>;
+  fmt?(value: unk, exp: str, opts?: Dic): str;
+  calc?(value: str, s: Scope, pag?: int): unk;
+  img?(path: str): str;
+  pagCount?: int;
+  wait?: (() => any)[];
 }
 interface Scope {
   readonly p?: BoxParent<any>;
-  id?: number;
-  dt?: unknown;
+  id?: int;
+  dt?: Obj;
   readonly ctx: Context;
-  /**@deprecated */
-  ranges?: { [index: number]: Object[]; };
 }
-export interface BoxParent<C extends IBox = Boxes<any>> extends Scope {
-
-  fitIn(box: C, css: Properties): object;
-  append(child: C, index: number): void;
-  remove?(child: C, index: number): void;
-  overflow(child: C, index: number): OFTp;
-  /** checa se o contiudo na pagina actual é so um pouco e pode ser totalmente transferivel para proxima pagina */
-  justALittle?(child: C, index: number): boolean;
-
-  insertAfter?(child: C, newE: IBox);
-  posWrite?(index?: number);
-  //checkStyle?<K extends keyof TextStyle>(key: K): TextStyle[K];
-  getTextTheme(): string;
-  listItem?(p: IPBox): S;
-  removeLI?(p: IPBox): void;
-  //readonly edit?: boolean;
+export interface BoxParent<CL = unk> extends Scope {
+  fitIn?(css: Properties, ly: CL, e: S, id: int): void;
+  append(child: Box<CL>, pag: int): void;
+  overflow(child: iBox<CL>, pag: int): OFTp;
+  listItem?(p: iP): S;
+  /**tag used for p element */
+  pTag?: keyof HTMLElementTagNameMap
 }
 
 //#region util
-export const empty = '&#8203;';
 type BorderType = "none" | "hidden" | "dotted" | "dashed" | "solid" | "double" | "groove" | "ridge" | "inset" | "outset";
 
 interface Border {
   style?: BorderType;
-  width?: number;
-  color?: string;
+  width?: int;
+  color?: str;
 }
 
 const $mapIndex = Symbol();
@@ -94,9 +51,9 @@ const $mapIndex = Symbol();
 const minBoxSize = 40;
 
 interface NDic<T> {
-  [n: number]: T;
-  start?: number;
-  end?: number;
+  [n: int]: T;
+  start?: int;
+  end?: int;
 }
 export const enum DTParts {
   /**head */
@@ -104,7 +61,7 @@ export const enum DTParts {
   /**foot */
   f = -2,
   /**data (body) */
-  d = 0,
+  bd = 0,
   /**top */
   t = -3,
   /**bottom */
@@ -126,15 +83,15 @@ export enum units {
 /* **************************INTERFACE*************************** */
 /* ************************************************************** */
 type Borders = [Border, Border, Border, Border] | Border;
-type BoxSpace = [number, number?, number?, number?];
+type BoxSpace = [int, int?, int?, int?];
 type TextVAlign = "baseline" | "sub" | "super"
-type Margin = [number | null, number | null, number | null, number | null];
+type Margin = [int | null, int | null, int | null, int | null];
 
 export interface SpanStyle {
   /**font family */
-  ff?: string;
+  ff?: str;
   /**font size */
-  fs?: number;
+  fs?: int;
   /**bold */
   b?: boolean;
   /**italic */
@@ -151,86 +108,75 @@ export interface SpanStyle {
   /**vertical align */
   va?: TextVAlign;
   /**color */
-  cl?: string;
+  cl?: str;
   /**background */
-  bg?: string;
+  bg?: str;
 }
 interface Shadow {
   inset?: boolean;
-  x: number;
-  y: number;
-  blur: number;
-  spread: number;
-  color: string;
+  x: int;
+  y: int;
+  blur: int;
+  spread: int;
+  color: str;
 }
 interface Efect {
-  blur: number,
-  brightness: number,
-  contrast: number,
-  grayscale: number,
-  'hue-rotate': number,
-  invert: number,
-  opacity: number,
-  saturate: number;
-  sepia: number;
+  blur: int,
+  brightness: int,
+  contrast: int,
+  grayscale: int,
+  'hue-rotate': int,
+  invert: int,
+  opacity: int,
+  saturate: int;
+  sepia: int;
 }
 interface ImgStyle {
-  radius?: number;
+  radius?: int;
   shadow?: Shadow[];
   border?: Border | [Border, Border, Border, Border];
   efect?: Efect;
-  clip?: [number, number, number, number];
-  h?: number,
-  w?: number;
+  clip?: [int, int, int, int];
+  h?: int,
+  w?: int;
 }
 interface Background {
   tp?: 'img' | 'color';
-  dt: string;
+  dt: str;
 }
 interface BoxStyle {
   bg?: Background;
   /**border */
-  bd?: Borders;
+  br?: Borders;
   /**Padding */
   pd?: BoxSpace;
-  /**Margin */
-  mg?: BoxSpace;
   /**border radius */
-  rd?: number | [number, number, number?, number?];
+  rd?: int | [int, int, int?, int?];
   /**@deprecated */
   al?
   /**text style */
-  tx?: string;
+  tx?: str;
 }
 interface TextShadow {
-  x: number;
-  y: number;
-  blur?: number;
-  color?: string;
+  x: int;
+  y: int;
+  blur?: int;
+  color?: str;
 }
+/**paragraph style */
 export interface PStyle {
 
   shadow?: TextShadow[];
-  mg?: number;
+  // mg?: int;
   //paragraph properties
-  indent?: number;
+  indent?: int;
   /**line height */
-  lh?: number;
+  lh?: int;
   /**align */
-  al?: TAlign;
+  al?: Align;
   noWrap?: boolean
   overflow?: 'ellipsis' | 'clip';
 }
-export type TAlign = "end" | "start" | 'center' | 'justify'|"left"|"right";
-// {
-//   l = "l",//left
-//   r = "r",//right
-//   e = "e",//end
-//   end = "e",
-//   s = "s",//start
-//   j = "j",//justify
-//   c = "c" //center
-// }
 export type TextStyle = PStyle & SpanStyle;
 
 interface divisor<T> {
@@ -244,92 +190,43 @@ interface divisor<T> {
 /* ************************************************************** */
 /* ***************************METHODS**************************** */
 
-function border(b: Border) {
+const border = (b: Border) => `${b.width || 1}px ${b.style || 'solid'} ${b.color || "#000"}`;
 
-  return `${b.width || 1}px ${b.style || 'solid'} ${b.color || "#000"}`;
-}
-
-function borders(css: Dic, bord: Borders) {
-  if ('length' in bord) {
+function borders(css: Properties, bord: Borders) {
+  if (isA(bord)) {
     if (bord[0] && hasProp(bord[0]))
-      css['border-top'] = border(bord[0]);
+      css.borderTop = border(bord[0]);
     if (bord[1] && hasProp(bord[1]))
-      css['border-right'] = border(bord[1]);
+      css.borderRight = border(bord[1]);
 
     if (bord[bord.length - 2] && hasProp(bord[bord.length - 2]))
-      css['border-bottom'] = border(bord[bord.length - 2]);
+      css.borderBottom = border(bord[bord.length - 2]);
     if (bord[bord.length - 1] && hasProp(bord[bord.length - 1]))
-      css['border-left'] = border(bord[bord.length - 1]);
-
+      css.borderLeft = border(bord[bord.length - 1]);
   } else css.border = border(bord);
 }
 
 const space = (p: BoxSpace) => p.map(p => p + 'px').join(' ')
 
-
-//existe 6 styles do tipo header
-//e 6 do tipo paragrafo que definim informação relacionadas a formatação do texto
-//tem inline style mas so para algumas propiedades(line,bold,italic,super,sub)
-//os table head não tenhem inline style e so podem ser de algum dos 6 tipos de header style
-//table cell não tem inline style tambem e so podem ser de um paragraph style
-//estilos do documentos (ex:border,padding,round,filter) tambem ficam nos styles globas mas tambem podem estar inlines
-function styleText(style: SpanStyle, css: Dic<Key>) {
-
-  if (style.ff)
-    css['font-family'] = style.ff;
-
-  if (style.fs)
-    css['font-size'] = `${style.fs}px`;
-
-  if ('b' in style)
-    css['font-weight'] = style.b ? 'bold' : 'normal';
-
-  if ('i' in style)
-    css['font-style'] = style.i ? 'italic' : 'normal';
-
-  if (style.u)
-    css['text-decoration-line'] = 'underline';
-
-  if (style.st)
-    css['text-decoration-line'] = (css['text-decoration-line'] || '') + ' line-through';
-
-  if (style.va)
-    css['vertical-align'] = style.va;
-
-  if (style.cl)
-    css.color = style.cl;
-
-  if (style.bg)
-    css.background = style.bg;
-
-  return css;
-}
-
-function emptyBlock(ly: Dic) {
-  return div([C.empty]).css(ly).html(empty);
-}
-
-function buildShadow(shadow: Shadow[]) {
-  return shadow.map(sh => `${sh.inset ? 'inset' : ''} ${sh.x}px ${sh.y}px ${sh.blur}px ${sh.spread}px ${sh.color}`).join(',');
-}
-function styleImg(style: ImgStyle, css: Dic<Key> = {}) {
-
+const buildShadow = (shadow: Shadow[]) =>
+  shadow.map(sh => `${sh.inset ? 'inset' : ''} ${sh.x}px ${sh.y}px ${sh.blur}px ${sh.spread}px ${sh.color}`).join(',');
+function styleImg(style: ImgStyle, css: Properties) {
   if (style) {
     if (style.border)
       if ('length' in style.border)
-        Object.assign(css, {
-          'border-top': border(style.border[0]),
-          'border-right': border(style.border[1]),
-          'border-bottom': border(style.border[2]),
-          'border-left': border(style.border[3]),
+        Object.assign(css, <Properties>{
+          borderTop: border(style.border[0]),
+          borderRight: border(style.border[1]),
+          borderBottom: border(style.border[2]),
+          borderLeft: border(style.border[3]),
         });
       else css.border = border(style.border);
 
     if (style.radius)
-      css['border-radius'] = `${style.radius}px`;
+      css.borderRadius = `${style.radius}px`;
 
     if (style.shadow)
-      css['box-shadow'] = buildShadow(style.shadow);
+      css.boxShadow = buildShadow(style.shadow);
 
     if (style.efect) {
       let fx = style.efect;
@@ -352,29 +249,24 @@ function styleImg(style: ImgStyle, css: Dic<Key> = {}) {
   }
   return css;
 }
-function styleBox(s: BoxStyle, css: Dic = {}) {
+function styleBox(s: BoxStyle, css: Properties) {
   if (s.bg) {
     css.background = s.bg.dt;
   }
-  if (s.bd)
-    borders(css, s.bd);
+  if (s.br)
+    borders(css, s.br);
 
   if (s.pd)
     css.padding = space(s.pd);
 
-  if (s.mg)
-    css.margin = space(s.mg);
-
   if (s.rd)
-    css['border-radius'] = typeof s.rd == "number" ?
+    css.borderRadius = isN(s.rd) ?
       `${s.rd}px` :
       s.rd.join('px ') + 'px';
 
   return css;
 }
 function styleParagraph(style: PStyle, css: Properties) {
-  if (style.mg)
-    css.margin = `${style.mg}px 0`
   if (style.shadow)
     css.textShadow = style.shadow.map(s => `${s.x}px ${s.y}px ${s.blur || 0}px ${s.color}`).join();
 
@@ -385,27 +277,51 @@ function styleParagraph(style: PStyle, css: Properties) {
   if (style.lh)
     css.lineHeight = style.lh;
 
-  style.al && (css.textAlign = style.al)
-  // if () {
-  //   let al;
-  //   switch (style.al) {
-  //     case 'c': al = 'center'; break;
-  //     case 'e': al = 'end'; break;
-  //     case 'l': al = 'left'; break;
-  //     case 'r': al = 'right'; break;
-  //     case 'j': al = 'justify'; break;
-  //     case 's': al = 'start';
-  //   }
-  //   ;
-  // }
+  style.al && (css.textAlign = align(style.al))
   if (style.noWrap) {
     css.whiteSpace = 'nowrap';
     css.textOverflow = style.overflow;
   }
   return css;
 }
+//existe 6 styles do tipo header
+//e 6 do tipo paragrafo que definim informação relacionadas a formatação do texto
+//tem inline style mas so para algumas propiedades(line,bold,italic,super,sub)
+//os table head não tenhem inline style e so podem ser de algum dos 6 tipos de header style
+//table cell não tem inline style tambem e so podem ser de um paragraph style
+//estilos do documentos (assign:border,padding,round,filter) tambem ficam nos styles globas mas tambem podem estar inlines
+function styleText(style: SpanStyle, css: Properties) {
+  if (style.ff)
+    css.fontFamily = style.ff;
 
-function getCtx(exp: string, scp: Scope, pag: number) {
+  if (style.fs)
+    css.fontSize = `${style.fs}px`;
+
+  if ('b' in style)
+    css.fontWeight = style.b ? 'bold' : 'normal';
+
+  if ('i' in style)
+    css.fontStyle = style.i ? 'italic' : 'normal';
+
+  if (style.u)
+    css.textDecorationLine = 'underline';
+
+  if (style.st)
+    css.textDecorationLine = (css.textDecorationLine || '') + ' line-through';
+
+  if (style.va)
+    css.verticalAlign = style.va;
+
+  if (style.cl)
+    css.color = style.cl;
+
+  if (style.bg)
+    css.background = style.bg;
+
+  return css;
+}
+
+function getCtx(exp: str, scp: Scope, pag: int) {
   let ctx = scp.ctx;
   if (exp) {
     //while (!parent.dt)
@@ -424,7 +340,7 @@ function getCtx(exp: string, scp: Scope, pag: number) {
         scp = scp.p;
       exp = exp.slice(1);
     }
-    var data: unknown;
+    var data: unk;
     if (exp[0] == '=') {
       data = ctx.calc(exp.slice(1), scp, pag);
       if (data == null)
@@ -434,95 +350,43 @@ function getCtx(exp: string, scp: Scope, pag: number) {
       let split = exp.split('.');
       data = scp.dt;
       for (let i = 0; i < split.length; i++) {
-        if (data == null) return null;
+        if (data == null) return {};
         data = data[split[i]];
       }
     }
 
-    return data;
+    return data || {};
   } else return scp.dt;
 }
-function wait(scp: Scope, cb: () => any) {
-  let w = scp.ctx.wait ||= [];
-  w.push(new Promise<void>(rs => {
-    setTimeout(() => { cb(); rs(); });
-  }));
-}
 interface CalcOpts {
-  funcs(name: string, args: any[]): any;
-  vars(name: string, obj?: boolean): any;
+  funcs(name: str, args: any[]): any;
+  vars(name: str, obj?: boolean): any;
 }
 interface Settings {
-  fmt?(value: unknown, exp: string, opts: Dic): string;
-  scalar?(value: number, fmt: string): any;
-  calc?(v: Expression, opts: CalcOpts): any;
+  fmt?(value: unk, exp: str, opts: Dic): str;
+  scalar?(value: int, fmt: str): any;
+
 }
 export const $: Settings = {}
-type CPU = (expression: Expression, scp: Scope, pag?: number) => any;
-type Exp = (this: { p: number, s: Scope }, ...args: any[]) => any;
+type CPU = (expression: str, scp: Scope, pag?: int) => any;
+type ExpFn = (this: { /**pag*/p: int, s: Scope }, ...args: any[]) => any;
 /** central processor unit */
-export function cpu(): CPU {
+export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>): CPU {
   let
-    delay = <Exp>function (data: () => any) {
-      let r = g('span').html(empty);
-      wait(this.s, () => { r.replace(data()); });
-      return r;
-    },
-    funcs = <Dic<Exp>>{
-      //options: (key: string) => system.options[key],
-      ctx(item?: string) {
-        let t = this.s.dt;
-        if (item) {
-          if (t)
-            for (let k of item.split('.'))
-              if (!(t = (t[k])))
-                break;
-        }
-        return t;
+    funcs = <Dic<ExpFn>>{
+      id() { return this.s.id },
+      set(key: str, value) { return this.s.dt[key] = value },
+      //set and get data to temporary storage
+      temp(k, v?) { return (this.s.ctx.temp ||= {})[k] = def(v, this.s.ctx.temp[k]) },
+      delay(data: () => any) {
+        let r = g('span').html(empty);
+        (this.s.ctx.wait ||= []).push(() => r.replace(data()));
+        return r;
       },
-      map_index() { return this.s.dt ? (this.s.dt[$mapIndex] + 1) : null },
-      set(key: string, value) { return this.s.dt[key] = value },
-      //set data to temporary storage
-      set_temp(key: string, value) { return (this.s.ctx.temp ||= {})[key] = value },
-      //get data from temporary storage
-      get_temp(key: string) { return this.s.ctx.temp?.[key] },
-      up(levels: number) {
-        let t = this.s;
-        for (let i = 0, j = levels || 1; i < j; i++)
-          t = t.p;
-        return t.dt;
-      },
-      index() { return this.s.id },
-      sheet_data() {
-        let t = this.s;
-        while (!t.ranges)
-          t = t.p;
-        return t.ranges[this.p];
-      },
-      sheetData() { return funcs.sheet_data.call(this); },
-      span(i: number, j: number) { return (this.s as TableElement).table.spans[i][j]; },
-      //item(key: string){ return  this.s.ctx.items.get(key) },
-      delay,
-      pag_sum(name: string, mapFn: (item: number) => number, format?: string) {
-        return delay.call(this, () => {
-          let
-            lastValue = <number>funcs.get_temp.call(this, name) || 0,
-            data = funcs.sheet_data.call(this).map(mapFn).reduce((p, n) => p + (n || 0), lastValue);
-
-          this.s.ctx.temp[name] = data;
-          return format ? this.s.ctx.fmt(data, format) : data;
-        });
-      },
-      pags() {
-        return this.s.ctx.parts.length;
-        //while (t.p)
-        //  t = t.p;
-        //return (t.parts as m.S[]).length;
-      },
-      pag() {
-        return this.p + 1;
-      },
-      //exchange(currency: string) {
+      pags() { return this.s.ctx.pagCount },
+      pag() { return this.p; },
+      ...extraFn
+      //exchange(currency: str) {
       //  if (!currency)
       //    currency = (<any>this.s.ctx)._fOpts.currency;
       //  return scalar.currencies().byKey(currency, 'code').value;
@@ -532,67 +396,40 @@ export function cpu(): CPU {
       //}
     };
 
-  return (v: Expression, s: Scope, p?: number) => $.calc(v, {
-    // try: true,
-    // object: true,
-    funcs(name, args) {
-      if (name in funcs) {
-        let t = funcs[name].call({ p, s }, ...args);
-        return t == null ? null : t;
-      }
-    },
-    vars(name, obj) {
-      let tempCtx = s;
-      while (tempCtx) {
-        if ((tempCtx.dt && typeof tempCtx.dt == 'object') && (name in tempCtx.dt))
-          return tempCtx.dt[name];
-
-        tempCtx = tempCtx.p;
-      }
+  return (v: str, s: Scope, p?: int) => fn(v, {
+    funcs: (key, args) => key in funcs ? def(funcs[key].call({ p, s }, ...args), null) : void 0,
+    vars(key, obj) {
+      if (key == "@") return s.dt;
+      let t = s;
+      do if (key in t.dt) return t.dt[key]; while (t = t.p);
 
       // @if DEBUG
-      console.warn('not_found', {
-        field: name,
-        context: s.dt
-      });
+      console.warn('not_found', { key: key, ctx: s });
       // @endif
       return obj ? {} : null;
     }
   });
 }
 
-
-
 //#endregion
-
-function cloneBox<T extends IBox>(box: T) {
-  return JSON.parse(JSON.stringify(box)) as T;
-  //return <T>acceptBoxes.get(box.tp).clone(box);
-}
-
-function emptyBox() {
-  return PBox.normalize({ tp: "p" });
-}
-
-
 interface Theme {
-  key?: string;
+  key?: str;
   base?: Key;
   /**espacamento padrão das paginas */
   padding?: BoxSpace;
   /**header size */
-  hdSize?: number;
+  hdSize?: int;
 
   /**footer size */
-  ftSize?: number;
+  ftSize?: int;
 
   text?: TextStyle;
 
   /**paragraph style, include default style for text in paragraph */
-  p?: Dic<TextStyle & { title?: string }>;
-  box?: Dic<BoxStyle & { title?: string }>;
-  title?: string;
-  info?: string;
+  p?: Dic<TextStyle & { title?: str }>;
+  box?: Dic<BoxStyle & { title?: str }>;
+  title?: str;
+  info?: str;
 
   //#region extensions
   hr?: Dic<HrStyle>;
@@ -601,207 +438,96 @@ interface Theme {
   //#endregion
 }
 
-export function createBox<T>(box: IBox<T>, id: number, parent: BoxParent) {
-  let t = boxes[box.tp];
-  if (!t)
-    throw 'tp not found';
-
-  return Reflect.construct(t, [box, parent, id]) as Box;
-}
-export function write<T>(box: IBox<T>, pag: number, id: number, parent: BoxParent<any>): number {
-  if (box.$) {
-    box.$.id = id;
-    box.$.render(pag);
-  } else {
-    createBox(box, id, parent).render(pag);
+export const create = <T>(i: iBox<T>, p: BoxParent<any>, id?: int) =>
+  Reflect.construct(boxes[i.tp || 'p'], [i, p, id]) as Box;
+export function write<T>(box: iBoxes<T> | str, pag: int, id: int, parent: BoxParent<any>): int {
+  if (isS(box)) {
+    box = { bd: box };
   }
-  return box.$.end;
+  return (box.$ ? (box.$.id = id, box.$) : create(box, parent, id)).view(pag);
 }
-/** normalize box */
-const normBox = <T extends IBox>(box: T) => boxes[box.tp].normalize(box);
-
 
 interface SideLayout {
 
 }
 
-
 /** overflow type */
 const enum OFTp {
   in = 0,
   out = 1,
-  jump = 2
+  jump = -1
 }
-
-
+type OFR = OFTp.in | OFTp.jump | float;
 
 interface IBookContext {
   readonly parent?: IBookContext;
-  dt?: unknown;
+  dt?: unk;
   ctx?: BoxRoot;
   parts?: NDic<S>;
 }
 interface BoxRoot extends IBookContext {
   items: Dic;
-  warning(message: string, data?: unknown): void;
+  warning(message: str, data?: unk): void;
   //context: RootContext
-
-
 }
-
-
-const enum BoxMode {
-  editing,
-
-  preview
-}
-
 
 /** ************************************************************* */
 /** ****************************SPAN***************************** */
 /** ************************************************************* */
 
-export interface ISpanBase<S = any> {
+export interface iSpan<S = any> {
   tp?: ST;
 
-  /**@deprecated */
-  s?;
   /**data */
-  dt: string;
-  $?: SpanBase;
+  bd?: str;
   /**style */
   is?: S;
 }
-interface SpanBase<T extends ISpanBase = ISpanBase> {
-  //new?(model: T, parent: IBookContext): SpanBase;
-
-  p: PBox;
-  /**cria um novo box para esta clause */
-  break(index: number): S;
-  view(index: number/*, edit: boolean*/): S;
-  //edit(action: string, opts: unknown)
-  parts: NDic<S>;
-
-  readonly length: number;
-}
-
-
-export interface ISpan extends ISpanBase<SpanStyle> {
+export interface iText extends iSpan<SpanStyle> {
   tp?: "t";
-  $?: Span;
 }
-export class Span implements SpanBase<ISpan> {
-  constructor(public model: ISpan, public p: PBox) { }
-
-  parts: NDic<S> = {};
-
-  get css() {
-    return styleText(this.model.is, {});
-  }
-
-  view(index: number) {
-    let t = this.parts[index] = g('span').css(this.css);
-    if (this.model.dt)
-      t.text(this.model.dt);
-    else t.html(empty);
-    return t;
-  }
-  break(index: number) {
-    let
-      model = this.model,
-      part = g('span', null, model.dt).css(this.css);
-    this.parts[index] = part;
-    return part;
-  }
-
-  get bold(): boolean {
-    let is = this.model.is;
-    return is && is.b || false;
-  }
-  get length() { return this.model.dt.length; }
-
-  static readonly break: true;
-  static isEmpty(model: ISpan) { return !model.dt; }
-  toJSON() { }
-}
-interface IScalar extends ISpanBase<SpanStyle> {
-  tp: "s";
-  $?: Scalar;
+interface iExp extends iSpan<SpanStyle> {
+  tp: "e";
   /**input type */
-  it?: string;
+  it?: str;
   /**format */
-  fmt?: string;
+  fmt?: str;
 }
-class Scalar implements SpanBase<IScalar> {
-  constructor(public model: IScalar, public p: PBox) {
-  }
-  get length() { return this.model.dt.length; }
-
-  parts: NDic<S> = {};
-
-  get css() {
-    return styleText(this.model.is, {});
-  }
-  view(index: number) {
-    const model = this.model;
-    let
-      p = this.p,
-      v: any = p.ctx.calc(model.dt, p, index);
-
-    if (model.fmt)
-      v = p.ctx.fmt(v, model.fmt);
-
-    return v == null ? null : this.parts[index] = g('exp' as any, { css: this.css }, v);
-  }
-  break(index: number) {
-    return this.parts[index] = g('exp' as any).css(this.css);
-  }
-  edit
-  //edit(action: BookBaseAction | string, opts?: unknown): boolean {
-  //  if (action.startsWith('t-')) {
-  //    editText(this.model, action, opts);
-  //    return true;
-  //  }
-  //  return false;
-  //}
-
-  static readonly break: true;
-  static isEmpty(model: IScalar) { return false; }
-  toJSON() { }
-}
-
-interface ILink extends ISpan { }
-class Link extends Span {
-
-}
-
-interface IImg extends ISpanBase<ImgStyle> {
+interface iImgSpan extends iSpan<ImgStyle> {
   tp: "img";
-  $?: Img;
-  width?: number;
-  height?: number;
+  width?: int;
+  height?: int;
   base?: 'width' | 'height';
-  pars: Dic<string>;
+  pars: Dic<str>;
   calc?: boolean
 }
-class Img implements SpanBase<IImg> {
+type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => S
 
-  parts: NDic<S> = {};
-
-  constructor(public model: IImg, public p: PBox) { }
-  view(index: number) {
-    let
-      model = this.model,
-      css = styleImg(model.is),
-      media = this.p.ctx;
-    if (model.base) {
-      css[model.base] = '100%'
-    } else {
-      css.width = (model.width || 64) + 'px';
-      css.height = (model.height || 64) + 'px';
+export const spans: Dic<Span> = {
+  t: <Span<iText>>(({ is, bd: dt }) => {
+    let t = g('span');
+    is && t.css(styleText(is, {}));
+    return dt ? t.text(dt) : t.html(empty);
+  }),
+  e: <Span<iExp>>(({ fmt, bd: dt, is }, p, pag) => {
+    let v: any = p.ctx.calc(dt, p, pag);
+    fmt && (v = p.ctx.fmt(v, fmt));
+    if (v || v === 0) {
+      let t = g('code', 0, v);
+      is && t.css(styleText(is, {}));
+      return t;
     }
-    if (model.calc) {
-      let t = media.calc(model.dt, this.p, index);
+  }),
+  img: <Span<iImgSpan>>(({ width: w, height: h, bd: dt, base, calc, is }, p, pag) => {
+    let css = styleImg(is, {});
+    if (base) {
+      css[base] = '100%'
+    } else {
+      css.width = (w || 64) + 'px';
+      css.height = (h || 64) + 'px';
+    }
+    if (calc) {
+      let t = p.ctx.calc(dt, p, pag);
       if (isS(t))
         return g('img', { src: t }).css(css);
       else {
@@ -812,249 +538,160 @@ class Img implements SpanBase<IImg> {
         return null;
       }
     }
-    else return this.parts[index] = g('img', {
-      src: media.img(model.dt, model.pars)
+    else return g('img', {
+      src: p.ctx.img(dt)
     }).css(css);
-  }
-  break(): S { throw "this clause is unbreakable"; }
+  })
+};
+export type iSpans = iText | iExp | iImgSpan;
 
-  static isEmpty(model: IScalar) { return false; }
-  get length() { return 1; }
-
-  //edit(action: BookBaseAction, opts?: unknown): boolean {
-  //  if (action.startsWith('img-')) {
-  //    editImg(this.model, action, opts);
-  //    return true;
-  //  }
-  //  return false;
-  //}
-
-  static readonly break: false;
-  toJSON() { }
-}
-
-export type Spans = ISpan | IScalar | IImg;
-
-export interface IPBox<L = unknown> extends IBox<L> {
-  tp: "p",
-  $?: PBox<L>,
-  is?: PStyle;
-  /**list index */
-  li?: number;
-  /**data */
-  dt?: Spans[];
-}
-
-
-
-type BoxFilter = (v: IBox) => any;
 /** ************************************************************* */
 /** *************************** BOX ***************************** */
 /** ************************************************************* */
-export interface IBox<L = unknown> {
-  $?: Box<L, any, any>;
+export interface iBox<L = unk> {
+  $?: Box<L, any>;
 
-  /**@deprecated */
-  box?
   /**inline style: Estilo interno */
   is?: unknown;
   /**style: nome do estilo no theme que este item usara */
-  s?: string;
+  s?: str;
 
-  tp: Key;
+  tp?: str;
   /**layout : informação que este elemento passa para o seu parent para ele definir no css */
   ly?: L;
 
   /**Closure: o escopo é usado pela formula para saber o objecto base de onde tirar as variaveis */
-  sc?: string;
-  /**unbreakeble se false caso não sobre espaço para por toda linha põe o que chegar na proxima pagina
-   * por defualt é false*/
-  ub?: boolean;
-  ///**key:identificador unico */
-  //key?: string;
+  sc?: str;
   /**validator: if this return false element is not renderized */
-  vl?: string;
-  /**validação por pagina deve ser processado no mesmo momento que
-   o footer e o header*/
-  pag?: Expression;
+  vl?: str;
 }
-abstract class Box<L = unknown, T extends IBox<L> = Boxes<L>, P extends BoxParent<T> = BoxParent<any>> implements Scope {
-  _css: Dic;
-  private _ly: object;
+abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
 
   /**@deprecated provavelmento so é util para o edit */
-  start: number;
-  /**@deprecated provavelmento so é util para o edit */
-  end: number;
+  start: int;
   parts: NDic<S> = {};
-  //id: number;
-  private _cd: Dic;
+  //id: int;
+  _d: Dic;
   get dt() {
-    let { model, p, start } = this;
-    return this._cd ||= getCtx(model.sc, p, start);
+    let { i, p, start } = this;
+    return this._d ||= getCtx(i.sc, p, start);
   }
   ctx: Context;
 
-  readonly p: P;
+  p: BoxParent;
 
-  get layout() {
-    return this._ly || (this._ly = this.p.fitIn(this.model, {}));
-  }
-  constructor(public model: T, parent: P, public id: number) {
-    model.$ = this;
-    this.ctx = (this.p = parent).ctx
-  }
-
-  abstract get css(): object;
-
-  find?(filter: (v: IBox) => any): IBox[];
-  abstract part(index: number): S;
-  abstract write(index: number): void;
-
-  valid(pag: number) {
-    return !this.model.vl || this.ctx.calc(this.model.vl, this, pag);
-  }
-  render(pag: number): void {
-    this.start = this.end = pag;
-    if (this.valid(pag))
-      this.write(pag);
-
-    else {
-      this.addBox(emptyBlock(this.layout), pag);
-      this.p.append(this.model, pag);
-      this.p.overflow(this.model, pag);
-    }
+  /**
+   * @param i interface
+   * @param p parent
+   * @param id 
+   */
+  constructor(public i: T, p: BoxParent, public id: int) {
+    i.$ = this;
+    this.ctx = (this.p = p).ctx
   }
 
-  addBox(s: S, index: number) {
-    this.parts[this.end = index] = s.cls([C.box]);
-
-    this.checkPag(index);
-    //if (this.edit)
-    //  this.setEditPart(s.prop('$', this.model));
-    return s;
+  css(e: S) {
+    let css: Properties = {}, { p, id, i } = this;
+    this.ss(css);
+    p.fitIn?.(css, i.ly || {}, e, id);
+    e.css(css)
   }
-  /** @deprecated */
-  reload(index: number) {
-    const model = this.model;
-    for (let k in this.parts)
-      this.model[k].remove();
-    this.parts = {};
+  find?(filter: (v: iBox) => any): iBox[];
 
-    //this.dt = getCtx(this.model.sc, this.p, index);
-
-    return this.write(0);
+  valid(pag: int) {
+    return !this.i.vl || this.ctx.calc(this.i.vl, this, pag);
   }
+
   update() {
     throw "not implemented";
   }
-  clear() {
-    this.parts = {};
-    this._cd = this._ly = this._css = null;
-  }
-  checkPag(index: number) {
-    if (this.model.pag) {
-      let pag = this.ctx.calc(this.model.pag, this, index) as (pags, pag) => boolean;
-      if (pag) {
-        wait(this, () => {
-          if (!pag(this.ctx.parts.length, index + 1))
-            this.part(index).css('visibility', 'hidden');
-        });
-      }
-    }
-  }
-  transport(from: number, to: number) {
-    let parts = this.parts;
-    if (from == this.start)
-      this.start = to;
 
-    this.end = to;
-
-    if (parts && from in parts) {
-      parts[to] = parts[from];
-      delete parts[from];
-    }
-  }
-
-
-
-  static normalize(dt: IBox) {
-    if (!dt.ly)
-      dt.ly = {};
-    if (!dt.is)
-      dt.is = {};
-    return dt;
-  }
-  static symbs(dt: IBox, list: string[]) { }
-  static clone(m: IBox) {
-    return <IBox>{
-      tp: m.tp,
-      is: m.is,
-      s: m.s,
-      ub: m.ub,
-      vl: m.vl,
-      sc: m.sc,
-      ly: m.ly,
-    };
-  }
-  static toMin(model: IBox) {
-
-    return model;
-  }
-  static fromMin(model): IBox {
-    return model;
-  }
-  // static replace(_model: IParentBox, _key: string, _newValue: IBox) {
-  //   return false;
-  // }
-  static isEmpty(model: IBox) { return false; }
-  private toJSON() { }
+  abstract transport(): void
+  abstract part(pag: int): S;
+  abstract view(pag: int): int;
+  clear() { delete this.i.$; }
+  /**self style */
+  abstract ss(v: Properties): void;
 }
+export type BoxT<L = unknown> = Box<L>;
+interface iSBox<L = unknown> extends iBox<L> {
+}
+abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
+  protected e: S;
+  part() { return this.e; }
 
-export class PBox<L = unknown> extends Box<L, IPBox<L>> {
+  transport() { this.start++; }
+  view(pag: int) {
+    if (this.valid(pag)) {
+      this.css(this.e = this.data(pag));
 
-  constructor(model: IPBox<L>, parent: BoxParent, id: number) {
-    super(model, parent, id);
-    for (let i = 0; i < model.dt.length; i++)
-      this.createSpan(model.dt[i]);
-  }
-
-  get theme() {
-    return theme.p[this.model.s] || null;
-  }
-  get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        th = theme.p,
-        props: Dic = {},
-        css: Dic = {};
-
-      if (md.s) {
-        let s = th[md.s];
-        if (s) {
-          styleText(s, css);
-          Object.assign(props, s);
-        }
-      }
-      if (md.is)
-        Object.assign(props, md.is);
-
-      this._css = this.p.fitIn(this.model, styleParagraph(props, css));
+      let { p, i } = this;
+      p.append(this, pag);
+      p.overflow(i, pag) && p.append(this, ++pag);
     }
-    return this._css;
+    return this.start = pag;
   }
-
-  write(index: number) {
+  protected data?(pag: int): S;
+}
+interface iMBox<L = unknown> extends iBox<L> {
+  /**unbreakeble se false caso não sobre espaço para por toda linha põe o que chegar na proxima pagina
+   * por defualt é false*/
+  ub?: bool;
+}
+abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
+  /**@deprecated provavelmento so é util para o edit */
+  end: int;
+  view(pag: int) {
+    this.start = this.end = pag;
+    if (this.valid(pag))
+      this.data(pag);
+    return this.end;
+  }
+  addBox(s: S, pag: int) {
+    this.css(this.parts[this.end = pag] = s);
+    return s;
+  }
+  transport() {
+    let { parts: p, end: e } = this;
+    this.parts = { [e + 1]: p[e] };
+  }
+  part(pag: int) { return this.parts[pag]; }
+  protected abstract data(pag: int): void;
+}
+export type ASpan = (iSpans | str)[] | str | iSpans;
+// box[0] == '=' ? [{ tp: "e", bd: box.slice(1) }] : 
+export const span = (v: ASpan) => v ? arr(v).map(v => isS(v) ? v[0] == '=' ? <iExp>{ tp: "e", bd: v.slice(1) } : { bd: v } : v) : [];
+export interface iP<L = unk> extends iMBox<L> {
+  tp?: "p",
+  $?: P<L>,
+  is?: PStyle;
+  /**list index */
+  li?: int;
+  /**body */
+  bd?: ASpan;
+}
+class P<L = unk> extends MBox<L, iP<L>> {
+  ss(css: Properties) {
     let
-      md = this.model,
-      p = this.part(index),
-      items: S[] = [md.li ? this.p.listItem(md) : null];
+      i = this.i,
+      th = theme.p[i.s],
+      props: Dic = {};
+    css.margin = 0;
+    if (th) {
+      styleText(th, css);
+      assign(props, th);
+    }
+    i.is && assign(props, i.is);
+    styleParagraph(props, css)
+  }
+  data(pag: int) {
+    let
+      i = this.i,
+      p = this.addBox(g(this.p.pTag || "p"), pag),
+      items: S[] = [i.li ? this.p.listItem(i) : null];
 
-    for (let i = 0, l = md.dt.length; i < l; i++) {
-      let
-        dtModel = md.dt[i],
-        data = dtModel.$.view(index/*, this.edit*/);
+    for (let j of span(i.bd)) {
+      let data = spans[j.tp || 't'](j, this, pag);
 
       if (data) {
         //if (this.edit)
@@ -1067,348 +704,208 @@ export class PBox<L = unknown> extends Box<L, IPBox<L>> {
       p.add(items);
     else p.html(empty);
 
-
-    return this.writeCheck(p, index);
+    this.p.append(this, pag);
+    return this.check(p, pag);
   }
-  part(index: number) {
-    let t = this.parts[index];
-    if (!t) {
-      t = this.parts[index] = this.addBox(g("p"), index).css(this.css);
-      this.p.append(this.model, index)
-    }
-    return t;
-  }
-  createSpan(span: Spans) {
-    PBox.normalizeSpan(span);
-    span.$ = Reflect.construct(spans[span.tp], [span, this]) as any;
-  }
-  writeCheck(p: S, index: number) {
-    let
-      md = this.model,
-      parent = this.p,
-      overflow: OFTp;
+  check(e: S, pag: int) {
+    let i = this.i, p = this.p, o: OFR, bd = span(i.bd);
 
-    while (overflow = parent.overflow(md, index)) {
-
-      if (overflow == OFTp.jump) {
-
-        index++;
-        continue;
-      }
+    while (o = p.overflow(i, pag)) {
+      if (o == OFTp.jump)
+        pag++;
 
       //se so sobrou um pouco de espaço nesta pagina
-      if (!md.dt.length || parent.justALittle(md, index)) {
-        parent.append(md, ++index);
+      else if (!l(bd) || o < 40) {
+        p.append(this, ++pag);
 
       } else {
         let
-          childs = p.childs(),
-          newE = g("p").css(this.css),
-          i = childs.length - 1;
+          childs = e.childs(),
+          newE = g("p"),
+          j = childs.length - 1;
 
-        while (i >= 0) {
-          newE.prepend(childs[i]);
+        while (j >= 0) {
+          newE.prepend(childs[j]);
           //usar aqui para que quando fazer o break diminua 
-          i--;
-          if (!parent.overflow(md, index))
+          j--;
+          if (!p.overflow(i, pag))
             break;
         }
 
 
-        let
-          last = childs[i + 1],
-          lastModel = md.dt[i + 1];
+        let last = childs.e(j + 1);
 
-        if (spans[lastModel.tp].break) {
-          p.add(last);
+        if (l(last.text()) > 2) {
+          e.add(last);
 
-          if (parent.overflow(md, index)) {
-            let newClauseDiv = lastModel.$.break(index),
-              lastClauseDivText = <Text>last.firstChild,
-              lcdtSplit = lastClauseDivText.textContent.split(' ');
+          // if (p.overflow(i, pag)) {
+          let
+            newSpan = last.clone(),
+            lastSpanText = last.e.firstChild,
+            split = lastSpanText.textContent.split(' '),
+            newSpanText: str[] = [];
 
-            do {
-              lcdtSplit.shift();
-              lastClauseDivText.textContent = lastClauseDivText.textContent.substring(0, lastClauseDivText.textContent.lastIndexOf(' '));
-            } while (parent.overflow(md, index));
+          do {
+            newSpanText.unshift(split.pop());
+            lastSpanText.textContent = split.join(' ');// lastSpanText.textContent.substring(0, lastSpanText.textContent.lastIndexOf(' '));
+          } while (p.overflow(i, pag));
 
-            newClauseDiv.add(lcdtSplit.join(' '));
-            newE.prepend(newClauseDiv);
-          }
+          newSpan.add(newSpanText.join(" "));
+          newE.prepend(newSpan);
+          // }
         }
 
-        index++;
+        pag++;
 
-        this.addBox(p = newE, index);
-        parent.append(md, index);
+        this.addBox(e = newE, pag);
+        p.append(this, pag);
 
       }
     }
-    return index;
-
-  }
-
-  static normalize(model: IPBox) {
-    Box.normalize(model);
-
-    if (!model.dt)
-      model.dt = [];
-    if (!model.dt.length)
-      model.dt.push(this.normalizeSpan({ dt: '' }));
-
-    for (let item of model.dt)
-      this.normalizeSpan(item);
-    return model;
-  }
-  static normalizeSpan(span: Spans) {
-    if (!span.tp)
-      span.tp = "t"
-    if (!span.is)
-      span.is = {};
-
-    return span;
-  }
-  static isEmpty(model: IPBox) {
-    for (let i = 0; i < model.dt.length; i++) {
-      let child = model.dt[i];
-      if (!spans[child.tp].isEmpty(child))
-        return false;
-    }
-    return true;
+    return pag;
   }
 }
-
+export type PT = P;
 interface BlockList extends SpanStyle {
   /**@deprecated */
-  indent?: number;
+  indent?: int;
   /**format */
-  fmt?: string;
+  fmt?: str;
 }
-export interface IParentBox<L = unknown, C extends IBox = Boxes> extends IBox<L> {
-  $?: ParentBox<L, C>;
-
+export type ABoxes<L = unk> = iBoxes<L> | iBoxes<BlockLy>[];
+interface iParentBase<L = unknown> extends iMBox<L> {
+  $?: Parent<L, any>;
   l?: BlockList;
-  /**header */
-  hd?: C;
-
-  /**data */
-  dt?: (C | string)[];
-
-  /**footer */
-  ft?: C;
-
-
   is?: BoxStyle;
   /**map: deve repetir a data usando o context */
-  map?: boolean;
+  map?: bool;
+  /**header */
+  hd?: ABoxes;
+
+  /**body */
+  bd?: (iBoxes)[];
+
+  /**footer */
+  ft?: ABoxes;
   /**usado so quando tiver map e não tiver nenhum item */
-  empty?: C;
-  ///**style of box */
-  //box?: string[];
+  empty?: iBoxes;
 }
-abstract class ParentBox<L = unknown, C extends IBox = Boxes, T extends IParentBox<L, C> = IParentBox<L, C>, P extends BoxParent<T> = BoxParent<T>> extends Box<L, T, P> implements BoxParent<C> {
-  //private _ctx: unknown;
-  ranges: { [index: number]: Object[]; };
-  mode: BoxMode;
+export interface iParent<L = unk, CL = unk> extends iParentBase<L> {
+  hd?: ABoxes<CL>;
+  bd?: iBoxes<CL>[];
+  ft?: ABoxes<CL>;
+  empty?: iBoxes<CL>;
+}
+const bparse = <T>(v: T, k: keyof T): iBoxes => isA(v[k]) ? v[k] = <any>{ tp: "d", bd: v[k] } : v[k];
+abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, CL>> extends MBox<L, T> implements BoxParent<CL> {
+  //private _ctx: unk;
+  ss(v: Properties) {
+    let
+      i = this.i,
+      box = theme.box[i.s],
+      txtStyle = theme.p[i.is?.tx || box && box.tx];
 
-  get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        p = this.p,
-        box = theme.box[md.s],
-        txtStyle = theme.p[md.is.tx || box && box.tx];
+    styleBox({ ...box, ...i.is }, v);
+    txtStyle && styleText(txtStyle, v);
 
-
-      //if (md.s)
-      //  for (let i = 0; i < md.s.length; i++) {
-      //    let t = th.box[md.s[i]];
-      //    if (t) {
-      //      if (!tx)
-      //        tx = t.tx;
-      //      Object.assign(props, t);
-      //    }
-      //  }
-
-      //if (md.is) {
-      //  if (md.is.tx)
-      //    tx.push(...md.is.tx);
-      //  Object.assign(props, md.is);
-      //}
-
-      this._css = p.fitIn(md, styleBox(Object.assign({}, box, md.is)));
-
-      if (txtStyle)
-        styleText(txtStyle, this._css);
-
-      //if (tx.length)
-      //  for (let t of tx) {
-      //    let t2 = th.p.byKey(t);
-      //    if (t2) {
-      //      styleText(t2, this._css);
-      //      //styleParagraph(t2);
-      //    }
-      //  }
-    }
-    return this._css;
   }
 
-  write(pag: number) {
-    let
-      { dt, map, empty, sc } = this.model,
-      l = dt.length;
+  data(pag: int) {
+    type MapContext = ArrayLike<any> & { /**pag data */pd: NDic<any[]> };
+    let { bd, map, empty } = this.i;
 
-    if (l) {
-      if (map && this.mode != BoxMode.editing) {
-        let
-          ctx = /*this._ctx = */this.dt as ArrayLike<unknown>,
-          //book = this.book,
-          range: Object[] = [];
-        if (l != 1)
-          throw "map parent should heve only one child";
+    if (map) {
+      let
+        dt = this.dt as MapContext,
+        range: Object[] = [], t = create(bd[0], this);
+      console.log(this);
+      dt.pd = { [pag]: range };
 
-        if (ctx == null || !('length' in ctx)) {
-          // @if DEBUG
-          console.warn('invalid fill', { key: sc, data: ctx });
-          // @endif
-          ctx = [];
-        }
-        this.ranges = { [pag]: range };
+      if (l(dt))
+        for (let i = 0; i < l(dt); i++) {
+          let row = dt[i];
+          if (row) row[$mapIndex] = i;
 
-        if (ctx.length)
-          for (let i = 0; i < ctx.length; i++) {
-            let row = ctx[i];
-            if (row) row[$mapIndex] = i;
-
-            range.push(row);
-
-            let temp = cloneBox(<IBox>dt[0]);
-            //temp.$.id = j;
-            temp.sc = temp.sc ? i + '.' + temp.sc : i + '';
-            let newPag = write(temp, pag, i, this);
-            if (newPag != pag) {
-              range.pop();
-              this.ranges[pag = newPag] = range = [row];
-            }
-            //for (let j = 0; j < l; j++) 
-            //i++;
+          range.push(t._d = row);
+          t.id = i;
+          let newPag = t.view(pag);
+          t.parts = {};
+          if (newPag != pag) {
+            range.pop();
+            dt.pd[pag = newPag] = range = [row];
           }
-        else if (empty)
-          pag = write(empty, pag, DTParts.d, this);
+          //for (let j = 0; j < l; j++) 
+          //i++;
+        }
+      else if (empty)
+        pag = write(empty, pag, DTParts.bd, this);
 
-      } else for (let i = 0; i < l; i++) {
-        let temp = <IBox>dt[i];
-        //temp.$.id = i;
-        pag = write(temp, pag, i, this);
-      }
-    } else this.part(pag);
+    } else for (let i = 0; i < l(bd); i++)
+      pag = write(bd[i], pag, i, this);
+
+
 
     return pag;
   }
 
-  append(child: C, index: number) {
-    const
-      md = this.model,
-      part = this.part(index),
-      cpart = child.$.part(index),
-      id = child.$.id;
+  append(ch: Box<CL>, pag: int) {
+    let
+      e = this.part(pag),
+      cpart = ch.part(pag);
 
-
-    switch (id) {
-      case 0:
-        if (md.hd)
-          part.place(1, cpart);
-        else part.prepend(cpart);
-        break;
-      case DTParts.h:
-        part.prepend(cpart);
-        break;
-      case DTParts.f:
-        part.add(cpart);
-        break;
-      //default:
-      //  part.place(cpart, id + (hd ? 1 : 0));
-      //  break;
-      default:
-        if (md.map) {
-          if (md.ft)
-            md.ft.$.parts[index].putBefore(cpart);
-          else part.add(cpart);
-        } else {
-          let prev = (<C>md.dt[id - 1]).$;
-          if (index in prev.parts)
-            prev.parts[index].putAfter(cpart);
-          else {
-            if (md.hd)
-              part.place(1, cpart);
-            else part.prepend(cpart);
-          }
-        }
-    }
+    ch.id >= 0 && (this.i.ft as iBoxes)?.$.part(pag) ? e.place(-2, cpart) : e.add(cpart);
   }
-  part(pag: number) {
-    let md = this.model, part = this.parts[pag];
+  part(pag: int) {
+    let i = this.i, part = this.parts[pag];
 
     if (!part) {
       part = this.createPart(pag);
-      this.p.append(md, pag);
+      this.p.append(this, pag);
 
-      if (md.hd)
-        write(md.hd, pag, DTParts.h, this);
-      if (md.ft)
-        write(md.ft, pag, DTParts.f, this);
+      bparse(i, "hd") && write(i.hd as iBoxes<CL>, pag, DTParts.h, this);
+      bparse(i, "ft") && write(i.ft as iBoxes<CL>, pag, DTParts.f, this);
     }
     return part;
   }
-  transport(from: number, to: number) {
-    let { hd, dt, ft } = this.model;
-    super.transport(from, to);
+  transport() {
+    let { hd, bd, ft } = this.i;
+    super.transport();
 
-    hd?.$.transport(from, to);
-    ft?.$.transport(from, to);
+    (hd as iBoxes<CL>)?.$.transport();
+    (ft as iBoxes<CL>)?.$.transport();
 
-    if (dt) for (let i of <C[]>dt)
-      if (i.$)
-        i.$.transport(from, to);
+    for (let i of bd)
+      i?.$.transport();
   }
-  overflow(child: C, index: number) {
-    let result = this.p.overflow(this.model, index);
+  overflow(child: iBox<CL>, pag: int) {
+    let result = this.p.overflow(this.i, pag);
 
     if (result) {
-      if (!this.break(child, index)) {
-        this.transport(index, index + 1);
-        this.p.append(this.model, index + 1);
+      if (!this.break(child, pag)) {
+        this.transport();
+        this.p.append(this, pag + 1);
         return OFTp.jump;
       }
     }
     return result;
   }
-  justALittle(child: C, index: number) {
-    return this.p.justALittle(this.model, index);
-  }
-  //protected abstract part(index: number): m.S;
-  break(child: C, index: number) {
-    const model = this.model;
+  //protected abstract part(index: int): m.S;
+  break(child: iBox<CL>, index: int) {
+    let i = this.i;
     //não deve quebrar se for o header ou footer a pedir
-    if (typeof child.$.id == "number" && !model.ub) {
+    if (isN(child.$.id) && !i.ub) {
 
 
       return true;
     }
     return false;
   }
-  getTextTheme() {
-    let md = this.model;
-    return md.is.tx ||
-      (md.s ? theme.box[md.s].tx : null) ||
-      this.p.getTextTheme();
-  }
 
   private _lCss: Dic;
-  private _lItems: Array<{ s: S, p: IPBox }>;
-  listItem(p: IPBox) {
+  private _lItems: Array<{ s: S, p: iP }>;
+  listItem(p: iP) {
     let
-      l = this.model.l,
+      l = this.i.l,
       css = this._lCss || styleText(l, {}),
       s = g('span', ['li'], $.scalar(p.li, l.fmt)).css(css);
     if (true) {
@@ -1419,327 +916,221 @@ abstract class ParentBox<L = unknown, C extends IBox = Boxes, T extends IParentB
         .on({
           click(e) { e.stopPropagation(); },
           focus() {
-            items.forEach(i => i.s.cls('on'));
+            items.forEach(i => i.s.c('on'));
           },
           blur() {
-            items.forEach(i => i.s.cls('on', false));
+            items.forEach(i => i.s.c('on', false));
           }
         });
     }
     return s;
   }
+  abstract fitIn(css: Properties, ly: CL, e: S, id: int): void;
 
-  abstract fitIn(box: C, css: object): object;
-
-  static normalize(md: IParentBox<any, any>) {
-    Box.normalize(md);
-
-    if (md.empty)
-      normBox(md.empty);
-
-    if (!md.dt)
-      md.dt = [];
-
-    if (!md.dt.length && !md.hd && !md.ft)
-      md.dt.push(<IPBox>{ tp: "p" });
-
-    for (let i = 0; i < md.dt.length; i++) {
-      let t = md.dt[i];
-      normBox(isS(t) ? md.dt[i] = { tp: "p", dt: [{ dt: t }] } : t);
-    }
-
-    if (md.hd)
-      normBox(md.hd);
-
-    if (md.ft)
-      normBox(md.ft);
-
-    return md;
-  }
-  static symbs({ dt, hd, ft }: IParentBox<any, any>, list: string[]) {
-    let t = (dt: IBox) => boxes[dt.tp].symbs(dt, list);
-    dt.forEach(t);
-    hd && t(hd);
-    ft && t(ft);
-  }
-  protected abstract createPart(index: number): S;
+  protected abstract createPart(index: int): S;
 
   clear() {
-    let { hd, dt, ft } = this.model;
+    let { hd, bd, ft } = this.i;
 
-    for (let i of <C[]>dt)
-      if (i.$) i.$.clear();
+    for (let i of bd)
+      i.$?.clear();
 
-    hd && hd.$ && hd.$.clear();
-    ft && ft.$ && ft.$.clear();
+    (hd as iBoxes)?.$?.clear();
+    (ft as iBoxes)?.$?.clear();
 
     super.clear();
   }
-
-  //static replace(model: IParentBox, key: string, newValue: Boxes) {
-  //  if (model.hd && replace(model.hd, key, newValue, () => { model.hd = newValue; }))
-  //    return true;
-
-  //  for (let i = 0; i < model.dt.length; i++)
-  //    if (replace(model.dt[i], key, newValue, () => { model.dt[i] = newValue; }))
-  //      return true;
-
-  //  if (model.ft && replace(model.ft, key, newValue, () => { model.ft = newValue; }))
-  //    return true;
-  //}
-
-  static isEmpty(model: IPBox) {
-    for (let i = 0; i < model.dt.length; i++) {
-      let child = model.dt[i];
-      if (!boxes[child.tp].isEmpty(child))
-        return false;
-    }
-    return true;
-  }
 }
-export type ParentBoxT = ParentBox;
+export type ParentT = Parent;
 
 interface BlockColumn {
-  width?: number;
+  width?: int;
   rule?: Border;
-  count?: number;
-  gap?: number;
+  count?: int;
+  gap?: int;
 }
-interface BlockLy {
+export interface BlockLy {
   /**is list item */
   li?: boolean;
 }
 
-export interface IBlockBox<L = unknown> extends IParentBox<L, Boxes<BlockLy>> {
-  tp: 'block'
+export interface iDiv<L = unk> extends iParent<L, BlockLy> {
+  tp: "d"
   cols?: BlockColumn;
 }
-export class BlockBox<L = unknown> extends ParentBox<L, Boxes<BlockLy>, IBlockBox<L>> {
-  public get css() {
-    let css = this._css;
-    if (!css) {
-      let md = this.model;
-      /**faz dessa maneira para o esta parte so ser processada uma vez */
-      css = super.css;
-      if (md.cols) {
-        let c = md.cols;
-        css['column-width'] = c.width;
-        css['column-count'] = c.count;
-        css['column-gap'] = c.gap + '%';
-        if (c.rule)
-          css['column-rule'] = border(c.rule);
-      }
+class Div<L = unk> extends Parent<L, BlockLy, iDiv<L>> {
+  ss(css: Properties) {
+    let md = this.i;
+    /**faz dessa maneira para o esta parte so ser processada uma vez */
+    super.ss(css);
+    if (md.cols) {
+      let c = md.cols;
+      css.columnWidth = c.width + "px";
+      css.columnCount = c.count;
+      css.columnGap = c.gap + '%';
+      if (c.rule)
+        css.columnRule = border(c.rule);
     }
-    return css;
   }
 
-  createPart(index: number) {
-    return this.addBox(div(C.block).css(this.css), index);
+  createPart(index: int) {
+    return this.addBox(div(), index);
   }
 
-  fitIn(_: IBox<BlockLy>, css: object) {
-    //if (child.ly.li) {
-    //  let i = 0, dt = this.model.dt;
-    //  while (i < dt.length)
-    //    if (dt[i] == child)
-    //      break;
-    //    else i++;
-
-    //  (css[attrs] || (css[attrs] = {})).li = i + 1;
-    //}
-
-    return css;
+  fitIn() {
   }
 }
-
-export const enum CAlign {
-  s = "s",//start
-  e = "e",//end
-  c = "c",//center
-  j = "j", //Justify
-  sb = "s-b",
-  sa = "s-a",
-  se = "s-e"
-};
-export interface CLy {
+export type BlockT = Div;
+export type Align = "e" | "s" | "c" | "j" | "l" | "r" | "end" | "start" | "center" | "justify" | "left" | "right";
+function align(v: Align) {
+  switch (v) {
+    case "e": return "end";
+    case "s": return "start";
+    case "c": return "center";
+    case "j": return "justify";
+    case "l": return "left";
+    case "r": return "right";
+  }
+  return v;
+}
+interface FlexLy {
   /**size defined in percent */
-  sz?: number;
-  max?: number;
-  min?: number;
-  /**align */
-  lgn?: CAlign;
-  /**@deprecated */
-  start?
-  /**@deprecated */
-  span?
-  /**@deprecated */
-  grow?
+  sz?: float | [size: float, growShrink: float] | [size: float, grow: float, shrink: float];
+  /**align accros secundary axis*/
+  al?: Align;
+  /**max and min in percentage*/
+  mm?: [min: float | 0, max: float];
+  /**Margin in pixels obs ""(empty string) means auto*/
+  mg?: float | "" | [v0: float | "", v1: float | ""];
 }
-export interface ICol<L = unknown> extends IParentBox<L, Boxes<CLy>> {
-  tp: "col",
-  /**padding */
-  pad?: number[];
-  reverse?: boolean;
-  align?: CAlign;
-}
-class ColBox<L = unknown> extends ParentBox<L, Boxes<CLy>, ICol<L>> {
-
-  get css() {
-    var css = this._css;
-    if (!css) {
-      var md = this.model;
-      css = super.css;
-      if (md.reverse)
-        css['flex-direction'] = 'column-reverse';
-      if (md.align)
-        switch (md.align) {
-          case 'e':
-            css['justify-content'] = 'flex-end';
-            break;
-
-          case "s":
-            css['justify-content'] = 'flex-start';
-            break;
-
-          case "c":
-            css['justify-content'] = 'center';
-            break;
-
-          default:
-            css['justify-content'] = md.align;
-            break;
-        }
-    }
-    return css;
-  }
-  createPart(index: number) {
-    return this.addBox(div([C.col]), index)
-      .css(this.css);
+/**flex layout */
+function fLy(ly: FlexLy, css: Properties, v0: "Top" | "Left", v1: "Bottom" | "Right") {
+  if (ly.sz) {
+    let [sz, g, s] = arr(ly.sz);
+    css.flexGrow = g ||= 0;
+    css.flexShrink = s || g;
+    sz && (css.flexBasis = sz + "%");
   }
 
-  fitIn(child: IBox<CLy>, css: Dic) {
-    let
-      ly = child.ly,
-      md = this.model;
-
-    //h = md.ori == Orientation.horizontal;
-    //if (md.stretch)
-    //  css.flex = '1 1 auto';
-
-    if (ly.sz)
-      css['flex-grow'] = ly.sz;
-
-    if (ly.min)
-      css['min-height'] = ly.min + '%';
-
-    if (ly.max)
-      css['max-height'] = ly.max + '%';
-
-    //if (l.grow != null)
-    //  css['flex-grow'] = l.grow;
-
-    //if (l.shrink != null)
-    //  css['flex-shrink'] = l.shrink;
-
-    if (ly.lgn) {
-      let al: string;
-      switch (ly.lgn) {
+  if (ly.al) {
+    if (ly.al) {
+      let al: str;
+      switch (ly.al) {
         case 's': al = 'flex-start'; break;
         case 'e': al = 'flex-end'; break;
         case 'c': al = 'center'; break;
         case 'j': al = 'stretch'; break;
+        default: al = ly.al;
       }
-      css['align-self'] = al;
+      css.alignSelf = al;
     }
-    if (md.pad) {
-      if (!child.$.id)
-        css['margin-top'] = (md.pad[0] || (md.pad[0] = 0)) + 'px';
+  }
+  if (ly.mg) {
+    let [t, b] = arr(ly.mg);
+    b = def(b, t);
+    css[`margin${v0}`] = t === "" ? "auto" : t + "px";
+    css[`margin${v1}`] = b === "" ? "auto" : b + "px"
+  }
+}
+export interface CLy extends FlexLy {
+}
+export interface iCol<L = unk> extends iParent<L, CLy> {
+  tp: "col",
+  /**padding */
+  // pad?: int[];
+  /**bottom to top */
+  btt?: boolean;
+  align?: Align;
+}
+class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
 
-      let id = <number>child.$.id + 1;
-      css['margin-bottom'] = (md.pad[id] || (md.pad[id] = 0)) + 'px';
-    }
+  ss(v: Properties) {
+    super.ss(v);
+    assign(v, <Properties>{
+      display: "flex",
+      flexDirection: "column"
+    });
+    var i = this.i;
+    if (i.btt)
+      v.flexDirection = 'column-reverse';
+    if (i.align)
+      switch (i.align) {
+        case 'e':
+          v.justifyContent = 'flex-end';
+          break;
 
-    return css;
+        case "s":
+          v.justifyContent = 'flex-start';
+          break;
+
+        case "c":
+          v.justifyContent = 'center';
+          break;
+
+        default:
+          v.justifyContent = i.align;
+          break;
+      }
+  }
+  createPart(pag: int) {
+    return this.addBox(div(), pag);
+  }
+
+  fitIn(css: Properties, ly: CLy) {
+    fLy(ly, css, "Top", "Bottom");
+    ly.mm && (
+      css.minHeight = ly.mm[0] + "%",
+      css.maxHeight = ly.mm[1] + "%")
   }
 }
 
 
 
-export interface RLy {
-  /**size defined in percent */
-  sz?: number;
-  grow?: number;
-  fl?: never;
-  hd?: never;
-  ft?: never;
+export interface RLy extends FlexLy {
+
+  // grow?: int;
 }
-type RC = Boxes<RLy>;
-export interface IRow<L = unknown> extends IParentBox<L, RC> {
+export interface iRow<L = unk> extends iParent<L, RLy> {
   tp: "row";
-  /**@deprecated */
-  justifty?
   /**padding */
-  pad?: number[];
+  // pad?: int[];
 }
-class RowBox<L = unknown> extends ParentBox<L, RC, IRow<L>> {
-  write(pag: number) {
-    let { dt } = this.model;
-    for (let i = 0; i < dt.length; i++)
-      pag = write(<RC>dt[i], pag, i, this);
+class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
+  ss(css: Properties) {
+    super.ss(css);
+    assign(css, <Properties>{
+      display: "flex",
+      flexDirection: "row"
+    });
+  }
+  data(pag: int) {
+    let { bd } = this.i;
+    for (let i = 0; i < bd.length; i++)
+      pag = write(bd[i], pag, i, this);
 
     return pag;
   }
-  createPart(index: number) {
-    return this
-      .addBox(div(C.row), index)
-      .css(this.css);
+  createPart(pag: int) {
+    return this.addBox(div(), pag);
   }
-  append(child: RC, index: number) {
-    const model = this.model;
-    let part = this.parts[index];
+  append(ch: Box<RLy>, pag: int) {
+    let part = this.parts[pag];
     if (!part) {
-      part = this.part(index);
-      this.p.append(model, index);
+      part = this.part(pag);
+      this.p.append(this, pag);
     }
 
-    part.add(child.$.part(index));
+    part.add(ch.part(pag));
   }
-  break(child: RC, index: number) {
+  break(child: iBox<RLy>, index: int) {
     //todo: corta todos os childs
     return super.break(child, index);
   }
-  fitIn(child: RC, css: Dic) {
-    let
-      l = child.ly,
-      md = this.model;
-
-    if (l.grow)
-      css['flex-grow'] = l.grow;
-    if (l.sz)
-      css['width'] = `${l.sz}%`;
-
-    if (md.pad) {
-      if (!child.$.id)
-        css['margin-left'] = md.pad[0] + '%';
-
-      let id = <number>child.$.id + 1;
-      css['margin-right'] = md.pad[id] + '%';
-    }
-    return css;
-  }
-
-  static normalize(model: IRow) {
-    if (!model.dt)
-      model.dt = [];
-    if (!model.dt.length)
-      model.dt[0] = { tp: "p" };
-    return ParentBox.normalize(model);
-    //var size = 0, l = model.dt.length;
-    //for (let i = 0; i < l; i++) {
-    //  let j = model.dt[i];
-    //  if (j.ly.sz)
-    //    size += j.ly.sz;
-    //}
+  fitIn(css: Properties, ly: CLy) {
+    fLy(ly, css, "Left", "Right");
+    ly.mm && (
+      css.minWidth = ly.mm[0] + "%",
+      css.maxWidth = ly.mm[1] + "%")
   }
 }
 
@@ -1747,18 +1138,9 @@ class RowBox<L = unknown> extends ParentBox<L, RC, IRow<L>> {
 /* ****************************TABLE***************************** */
 /* ************************************************************** */
 
-interface TableSpan {
-  start: number;
-  val: string;
-  sz?: number;
-  hd?: Boxes<TSpanRowLayout>;
-  dt?: Boxes<TSpanRowLayout>;
-  ft?: Boxes<TSpanRowLayout>;
-}
-
 interface TableStyle extends BoxStyle {
   /**style for child in the body */
-  dt?: BoxStyle;
+  bd?: BoxStyle;
   /**style for child in the header */
   hd?: BoxStyle;
   /**style for child in the footer */
@@ -1785,33 +1167,37 @@ interface TableStyle extends BoxStyle {
 interface TableLayout {
 
 }
-export interface TbCell {
+interface TbCellObj {
   /**size */
-  sz?: number;
+  sz?: float;
 }
+export type TbColInfo = TbCellObj | float;
 
 
 export type Ori = "h" | "v";
-export type TBoxes = ITRowBox | ITHeadBox;
-export interface ITableBox<L = unknown> extends IParentBox<L, TBoxes> {
-  tp: "table";
-  is?: TableStyle,
-  ori?: Ori;
-  spans?: Array<TableSpan>;
-  /**Cells */
-  cols?: TbCell[];
+export interface iTb<L = unk> extends iParentBase<L> {
+  tp: "tb";
+  is?: TableStyle;
+  hd?: iTr;
+  bd?: iTr[];
+  ft?: iTr;
+  empty?: iTr;
+  /**columns */
+  cols?: TbColInfo[];
 }
-class Tb<L = unknown> extends ParentBox<L, TBoxes, ITableBox<L>> {
+class Tb<L = unk> extends Parent<L, void, iTb<L>> {
   private _style: TableStyle;
   /**span data */
-  spans: Array<Array<unknown>>;
-
+  spans: Array<Array<unk>>;
+  ss(v: Properties) {
+    v.borderCollapse = "collapse"
+  }
   get style() {
     if (!this._style) {
       let
-        md = this.model,
+        i = this.i,
         th = theme.tables;
-      this._style = Object.assign(th[md.s] || th[''] || {}, md.is);
+      this._style = assign(th[i.s] || th[''] || {}, i.is);
 
       //if (md.s)
       //  for (let i = 0; i < md.s.length; i++)
@@ -1820,595 +1206,122 @@ class Tb<L = unknown> extends ParentBox<L, TBoxes, ITableBox<L>> {
     }
     return this._style;
   }
-  get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        p = this.p,
-        style = this.style,
-        txtStyle = theme.p[md.is.tx || style && style.tx];
-      //props: TableStyle = {},
-      //tx: string[] = [];
 
-      //Object.assign(props, );
-
-      //if (md.box)
-      //  for (let i = 0; i < md.box.length; i++) {
-      //    let t = th.box.byKey(md.box[i]);
-      //    if (t) {
-      //      if (t.tx)
-      //        tx.push(...t.tx);
-      //      Object.assign(props, t);
-      //    }
-      //  }
-      //if (md.is)
-      //  Object.assign(props, md.is);
-
-      this._css = p.fitIn(md, styleBox(style));
-
-      if (txtStyle)
-        styleText(txtStyle, this._css);
-      //if (props.tx)
-      //  for (let t of props.tx) {
-      //    let t2 = th.p.byKey(t);
-      //    if (t2)
-      //      styleText(t2, this._css);
-      //  }
-
-      //if (tx.length)
-      //  for (let t of tx) {
-      //    let t2 = th.p.byKey(t);
-      //    if (t2)
-      //      styleText(t2, this._css);
-      //  }
-      //this._css['flex-direction'] = md.ori == ui.Orientation.horizontal ? 'row' : 'column';
-    }
-    return this._css;
+  createPart(pag: int) {
+    return this.addBox(g("table"), pag);
   }
-
-  createPart(index: number) {
-    return this
-      .addBox(div(C.table), index)
-      .css(this.css);
-  }
-  fitIn(_child: IBox<TableLayout>, css: Dic) {
-    return css;
-  }
-
-  clear() {
-    super.clear();
-    this._style = null;
-  }
-  render(pag) {
-    super.render(pag);
-    let md = this.model;
-    if (md.spans) {
-      this.spans = Array(md.spans.length);
-      for (let i = 0; i < md.spans.length; i++) {
-        let
-          span = md.spans[i],
-          items = <unknown[]>this.ctx.calc(span.val, this, pag);
-
-        if (!Array.isArray(items)) {
-          // @if DEBUG
-          console.warn('span value is not iterable', items);
-          // @endif
-          items = [items];
-        }
-
-
-        if (items.length) {
-          md.cols.splice(span.start, 0, ...items.map(_ => ({ sz: span.sz })));
-          Tb.normalizeSize(md.cols);
-        }
-
-        this.spans[i] = items;
-      }
-    }
-  }
-  static normalizeSize(cols: TbCell[]) {
-    let length = cols.length;
-
-    var totalSize = 0;
-    for (let i = 0; i < length; i++) {
-      let s = (cols[i] || (cols[i] = {})).sz;
-
-      if (!s)
-        s = 100 / length;
-      totalSize += cols[i].sz = s;
-    }
-
-    for (let col of cols)
-      col.sz = col.sz * 100 / totalSize;
-  }
-  static normalize(md: ITableBox) {
-    ParentBox.normalize(md);
-    if (!md.ori)
-      md.ori = "v";
-
-    if (md.spans)
-      for (let span of md.spans) {
-        if (span.hd)
-          normBox(span.hd);
-
-        if (span.dt)
-          normBox(span.dt);
-
-        if (span.ft)
-          normBox(span.ft);
-      }
-
-    if (!md.cols)
-      if (md.dt && md.dt.length) {
-        let t = (<TBoxes>md.dt[0]).dt;
-        if (t && t.length)
-          md.cols = t.map(_ => <TbCell>{ sz: 100 / t.length });
-        else throw "unsetted1";
-      } else throw "unsetted2";
-
-    Tb.normalizeSize(md.cols);
-    return md;
-  }
+  fitIn() { }
 }
 
-interface TrLYBase {
-  /**margin top*/
-  mt?: number;
-  /**margin left*/
-  ml?: number;
-  /**margin right*/
-  mr?: number;
-  /**margin bottom*/
-  mb?: number;
-}
-export interface TrLy extends TrLYBase {
+export interface TrLy {
   /**row span */
-  span?: number;
-}
-interface TSpanRowLayout extends TrLYBase {
-  single?: boolean;
+  span?: int;
+  /**margin top*/
+  mt?: int;
+  /**margin left*/
+  ml?: int;
+  /**margin right*/
+  mr?: int;
+  /**margin bottom*/
+  mb?: int;
 }
 
 /* ****************************TROW***************************** */
-export interface ITRowBox extends IParentBox<TableLayout, Boxes<TrLy>> {
-  tp: "tr" | "th";
-  map?: never;
-  th?: never;
-  tf?: never;
+export interface iTr<L = void> extends iSBox<L> {
+  tp: "tr";
+  bd?: iBoxes<TrLy>[];
+  is?: BoxStyle;
 }
-interface TableElement extends Box<any, any, any> {
-  readonly table: Tb;
-}
-
-class Tr<T extends ITRowBox = ITRowBox> extends ParentBox<TableLayout, Boxes<TrLy>, T, Tb> implements TableElement {
-  protected bd: Boxes<TrLy>[];
-
-  get table() { return this.p as Tb; }
-  constructor(model: T, parent: Tb, id: number) {
-    if (model.ub == null)
-      model.ub = true;
-
-    super(model, parent, id);
-
+/**column size */
+const cs = (c: TbColInfo) => isN(c) ? c : c.sz;
+class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
+  declare p: Tb;
+  ss(v: Properties) {
     let
-      //model = this.model,
-      dt = model.dt,
-      spanDatas = parent.spans,
-      spans = parent.model.spans;
+      i = this.i,
+      props: BoxStyle = {},
+      tableStyle = this.p.style,
+      pS =
+        i.$.id == DTParts.h ?
+          tableStyle.hd :
+          i.$.id == DTParts.f ?
+            tableStyle.ft :
+            tableStyle.bd,
+      box = theme.box[i.s],
+      txtStyle = theme.p[i.is?.tx || (box && box.tx) || (pS && pS.tx)];
 
-    if (spans && spans.length) {
-      dt = dt.slice();
-      for (let i = 0; i < spans.length; i++) {
-        let span = spans[i], sdata = spanDatas[i], sdt = this.model.$.id == DTParts.h ? span.hd : this.model.$.id == DTParts.f ? span.ft : span.dt;
-        // @if DEBUG
-        if (!sdt) {
-          console.warn('span part missing');
-        }
-        // @endif
-        if (sdt && sdt.ly.single) {
-        }
-        else
-          for (let j = 0; j < sdata.length; j++) {
-            let t1 = sdt ? cloneBox(sdt) : emptyBox(), t2 = `span(${i},${j})`;
-            t1.sc = '=' + (t1.sc ? `proccess(${t2},'${t1.sc}')` : t2);
-            dt.splice(span.start + j, 0, t1);
-          }
-      }
-    }
+    styleBox(assign(props, pS, box, i.is), v)
 
-    this.bd = <Boxes<TrLy>[]>dt;
+    txtStyle && styleText(txtStyle, v);
   }
 
-  get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        p = <Tb>this.p,
-        props: Dic = {},
-        tableStyle = p.style,
-        pS =
-          md.$.id == DTParts.h ?
-            tableStyle.hd :
-            md.$.id == DTParts.f ?
-              tableStyle.ft :
-              tableStyle.dt,
-        box = theme.box[md.s],
-        txtStyle = theme.p[md.is.tx || (box && box.tx) || (pS && pS.tx)];
+  data(pag: int) {
+    this.e = g("tr");
+    let bd = this.i.bd;
+    for (let i = 0; i < bd.length; i++)
+      pag = write(bd[i], pag, i, this);
 
-      //if (md.s)
-      //  for (let i = 0; i < md.s.length; i++)
-      //    Object.assign(props, th.box.byKey(md.s[i]));
-
-      //if (md.is)
-      //  Object.assign(props, md.is);
-
-      this._css = p.fitIn(md, styleBox(Object.assign(props, pS, box, md.is)));
-
-
-      if (txtStyle)
-        styleText(txtStyle, this._css);
-      //var tx = props.tx || (st && st.tx);
-      //if (tx)
-      //  for (let t of tx) {
-      //    let t2 = th.p.byKey(t);
-      //    if (t2)
-      //      styleText(t2, this._css);
-      //  }
-      //if ()
-      //  styleText(th.p.get(props.tx || (st && st.tx)), this._css);
-
-      //this._css['grid-template'] =
-      //  (md.hd ? ('"' + ('h ').repeat(p.model.cols.length) + '" auto ') : '') +
-      //  (md.dt ? ('"' + p.model.cols.map((e, i) => 'c' + i).join(' ') + '" auto ') : '') +
-      //  (md.ft ? ('"' + ('f ').repeat(p.model.cols.length) + '" auto ') : '') +
-      //  '/ ' + p.model.cols.map(c => c.sz + '%').join(' ');
-
-    }
-    return this._css;
+    return this.e;
   }
-
-  protected setSpan(dt: IBox<TrLy>[]) {
+  append(ch: Box<TrLy>, pag: int) {
+    this.e.add(ch.part(pag));
+  }
+  get pTag(): keyof HTMLElementTagNameMap { return "td"; }
+  fitIn(css: Properties, ly: TrLy, e: S<HTMLTableCellElement>, id: int) {
     let
-      parent = (this.p as Tb),
-      spanDatas = parent.spans,
-      spans = parent.model.spans;
+      { i: { bd }, p } = this,
+      cols = p.i.cols;
 
-    if (spans && spans.length) {
-      dt = dt.slice();
-      for (let i = 0; i < spans.length; i++) {
-        let span = spans[i], sdata = spanDatas[i], sdt = this.model.$.id == DTParts.h ? span.hd : this.model.$.id == DTParts.f ? span.ft : span.dt;
-        // @if DEBUG
-        if (!sdt) {
-          console.warn('span part missing');
-        }
-        // @endif
-        if (sdt && sdt.ly.single) {
-        }
-        else
-          for (let j = 0; j < sdata.length; j++) {
-            let t1 = sdt ? cloneBox(sdt) : emptyBox(), t2 = `span(${i},${j})`;
-            t1.sc = '=' + (t1.sc ? `proccess(${t2},'${t1.sc}')` : t2);
-            dt.splice(span.start + j, 0, t1);
-          }
+    if (cols && id >= 0) {
+      let start = id;
+      for (let i = 0; i < id; i++)
+        start += (bd[i].ly?.span || 1) - 1;
+
+      let w = cs(cols[start]);
+
+      if (ly.span) {
+        for (let i = 1; i < ly.span; i++)
+          w += cs(cols[i + start]);
       }
+      if (ly.ml)
+        w -= ly.ml;
+      if (ly.mr)
+        w -= ly.mr;
+
+      css.width = w + '%';
     }
-    return dt;
-  }
+    ly.span && (e.e.colSpan = ly.span)
+    let tbS = p.style;
 
-  write(pag: number) {
-    if (this.bd)
-      for (let i = 0; i < this.bd.length; i++) {
-        let temp = this.bd[i];
-        //temp.$.id = ;
+    if (tbS.col && id >= 0)
+      styleBox(tbS.col, css);
 
-        pag = write(temp, pag, i, this);
-      }
-    return pag;
-  }
-  append(child: IBox, index: number) {
-    this
-      .part(index)
-      .add(child.$.part(index));
-  }
-  part(index: number) {
-    let part = this.parts[index];
-
-    if (!part) {
-      this.checkPag(index);
-
-      part = this.createPart(index);
-      this.p.append(this.model, index);
-    }
-    return part;
-  }
-  createPart(index: number) {
-    return this
-      .addBox(div(C.tr), index)
-      .css(this.css);
-  }
-  //setup(index: number, parent: TableBox): void {
-  //  super.setup(index, parent);
-
-  //}
-
-  fitIn(child: IBox<TrLy>, css: Dic) {
-    let
-      l = child.ly,
-      cols = (this.p as Tb).model.cols,
-      id = child.$.id;
-
-
-    if (id >= 0) {
-      let start = getCellStart(id, this.bd);
-
-      let w = cols[start].sz;
-
-      if (l.span) {
-        for (let i = 1; i < l.span; i++)
-          w += cols[i + start].sz;
-      }
-      if (l.ml)
-        w -= l.ml;
-      if (l.mr)
-        w -= l.mr;
-
-      css['width'] = w + '%';
-    }
-    tableCellStyle(child, css, this.p as Tb);
+    if (ly.ml)
+      css.marginLeft = ly.ml + '%';
+    if (ly.mt)
+      css.marginTop = ly.mt + '%';
+    if (ly.mr)
+      css.marginRight = ly.mr + '%';
+    if (ly.mb)
+      css.marginBottom = ly.mb + '%';
     return css;
   }
 
-  setEditMode() {
+  overflow(_, pag: int) {
+    let r = this.p.overflow(this.i as any, pag);
 
-  }
-
-  static clone(box: ITRowBox) {
-    let temp = Box.clone(box);
-
-    return temp;
-  }
-}
-function tableCellStyle(child: IBox<TrLy>, css: Dic, table: Tb) {
-  let
-    l = child.ly,
-    pst = table.style;
-
-  if (pst.col && child.$.id >= 0)
-    styleBox(pst.col, css);
-
-  if (l.ml)
-    css['margin-left'] = l.ml + '%';
-  if (l.mt)
-    css['margin-top'] = l.mt + '%';
-  if (l.mr)
-    css['margin-right'] = l.mr + '%';
-  if (l.mb)
-    css['margin-bottom'] = l.mb + '%';
-}
-
-/* ****************************THEAD***************************** */
-export interface ITHeadBox extends ITRowBox {
-  tp: "th";
-  hd?: Boxes<TrLy>;
-  ft?: Boxes<TrLy>;
-  groups?: Array<ITGroupBox<TrLy>>;
-}
-class Th extends Tr<ITHeadBox> {
-  constructor(model: ITHeadBox, parent: Tb, id: number) {
-    super(model, parent, id);
-
-    let dt = this.bd;
-    //model = this.model,
-
-    if (dt && dt.length) {
-      let groups = model.groups;
-
-      if (groups && groups.length) {
-        dt = dt.slice();
-        let
-          spanData = (this.p as Tb).spans,
-          spans = (this.p as Tb).model.spans;
-
-        for (let i = 0; i < groups.length; i++) {
-          let gr = groups[i];
-          if (spans) {
-            //erro: aqui ele vai adicionar o span no group sempre que renderizar
-            for (let j = 0; j < spans.length; j++)
-              if (gr.from <= spans[j].start && gr.to >= spans[j].start)
-                gr.to += spanData[j].length - 1;
-          }
-          let l = gr.to - gr.from + 1;
-          if (l < 1) break;
-
-          //nos proximo niveis este group vai representar os seus filhos
-          dt.splice(gr.from, l, ...<any>(gr.dt = dt.slice(gr.from, gr.to + 1)).map(_ => gr));
-          gr.ly.span = l;
-        }
-        dt = dt.filter((f, i) => {
-          return dt.indexOf(f, i + 1) == -1;
-        });
-      }
-      this.bd = dt;
+    if (r) {
+      this.transport();
+      this.p.append(this as any, pag + 1);
+      return OFTp.jump;
     }
+    return OFTp.in;
   }
-
-  write(pag: number) {
-    let model = this.model;
-
-    if (model.hd) {
-      //model.hd.$.id = ;
-      pag = write(model.hd, pag, DTParts.h, this);
-    }
-
-    pag = super.write(pag);
-
-    if (model.ft) {
-      //model.ft.$.id = ;
-      pag = write(model.ft, pag, DTParts.f, this);
-    }
-    return pag;
-  }
-
-  //setup(index: number, parent: TableBox): void {
-  //  super.setup(index, parent);
-
-  //}
-  createPart(pag: number) {
-    return this
-      .addBox(div(C.th, div([C.body])), pag)
-      .css(this.css);
-  }
-  append(child: IBox, pag: number) {
-    let
-      part = this.part(pag),
-      cpart = child.$.part(pag);
-
-    switch (child.$.id) {
-      case DTParts.h:
-        part.prepend(cpart);
-        break;
-      case DTParts.f:
-        part.add(cpart);
-        break;
-      default:
-        part.child('.' + C.body).add(cpart);
-    }
-  }
-
-  static normalize(model) {
-    super.normalize(model);
-    if (model.groups)
-      for (let group of model.groups)
-        normBox(group);
-    return model;
-  }
-
   clear() {
-    let groups = this.model.groups;
-    if (groups)
-      for (let group of groups)
-        if (group.$)
-          group.$.clear();
-
+    for (let i of this.i.bd)
+      i.$?.clear();
     super.clear();
   }
-}
-
-/* ****************************TGROUP***************************** */
-interface ITGroupBox<L = unknown> extends IParentBox<L, Boxes<any>> {
-  tp: "tg";
-  map?: never;
-  hd: Boxes<TrLy>;
-  dt?: Boxes<TrLy>[];
-  ft?: never;
-  from: number;
-  to: number;
-}
-class Tg<L = unknown> extends ParentBox<L, Boxes<any>, ITGroupBox<L>> implements TableElement {
-  private size: number;
-  private cols: TbCell[];
-  private _table: Tb;
-  constructor(model: ITGroupBox<L>, parent: BoxParent<ITGroupBox<any>>, id: number) {
-    super(model, parent, id);
-    let
-      cols = this.cols = this.table.model.cols,
-      //id = model.$.id as number,
-      l = model.ly as TrLy;
-
-    let w = cols[id].sz;
-    if (l.span) {
-      for (let i = id + 1; i < l.span + id; i++)
-        w += cols[i].sz;
-    }
-    this.size = w;
-  }
-  get table() {
-    if (!this._table) {
-      let p = this.p;
-      while (!(p instanceof Tb))
-        p = p.p as BoxParent<any>;
-      this._table = p as Tb;
-    }
-    return this._table;
-  }
-
-  fitIn(child: IBox<TrLy>, css: Dic): Dic {
-    let
-      l = child.ly,
-      start = child.$.id as number;
-
-    //se não for o head
-    if (start >= 0) {
-      start = getCellStart(start, this.model.dt) + (this.model.$.id as number);
-
-      let w = this.cols[start].sz;
-      if (l.span) {
-        for (let i = start + 1; i < l.span + start; i++)
-          w += this.cols[i].sz;
-      }
-      //ajusta para 100 porcentos
-      w = w * 100 / this.size;
-
-      if (l.ml)
-        w -= l.ml;
-      if (l.mr)
-        w -= l.mr;
-
-      css['width'] = w + '%';
-    }
-    tableCellStyle(child, css, this.table);
-    return css;
-  }
-  append(child: IBox<TrLy>, index: number): void {
-    let
-      part = this.part(index),
-      cpart = child.$.part(index);
-
-    if (child.$.id == DTParts.h)
-      part.prepend(cpart);
-    else part.child('.' + C.body).add(cpart);
-  }
-  //setup(index: number, parent: IBoxParent): void {
-  //  super.setup(index, parent);
-
-  //}
-  write(pag: number): number {
-    let { hd, dt } = this.model;
-
-    pag = write(hd, pag, DTParts.h, this);
-
-    for (let i = 0; i < dt.length; i++) {
-      let t = dt[i];
-      pag = write(t, pag, i, this);
-    }
-
-    return pag;
-  }
-  part(index: number): S<HTMLElement> {
-    let part = this.parts[index];
-    if (!part) {
-      part = this
-        .addBox(div([C.box, C.tableGroup], div([C.body])), index)
-        .css(this.css);
-      this.p.append(this.model, index);
-    }
-    return part;
-  }
-  createPart(index: number) { return null; }
-
-  static normalize(model/*: ITGroupBox*/) {
-    super.normalize(model);
-    normBox(model.hd);
-    return model;
-  }
-}
-
-function getCellStart(index: number, dt: IBox<TrLy>[]) {
-  let start = index;
-  for (let i = 0; i < index; i++)
-    if (dt[i].ly.span)
-      start += dt[i].ly.span - 1;
-  return start;
 }
 
 
@@ -2419,86 +1332,51 @@ function getCellStart(index: number, dt: IBox<TrLy>[]) {
 
 interface GridRowLayout {
   /**column span */
-  cspan?: number;
+  cspan?: int;
   /**top, right, bottom, left */
   margin?: Margin;
 
   break?: boolean;
 }
-interface GridLayout extends GridRowLayout {
+interface GridLy extends GridRowLayout {
   /**column */
-  c: number;
+  c: int;
 
   /**row span */
-  rspan?: number;
+  rspan?: int;
 
   /**row */
-  r: number;
+  r: int;
 }
-interface IGridBox<L = unknown> extends IParentBox<L, Boxes<GridLayout>> {
+interface iGrid<L = unk> extends iParent<L, iBoxes<GridLy>> {
   tp: "grid";
   //orientation: ui.Orientation;
   gap: BoxSpace;
-  columns: any[];
+  cols: any[];
   rows: any[];
 }
-class GridBox<L = unknown> extends ParentBox<L, Boxes<GridLayout>, IGridBox<L>> {
-  get css() {
-    var css = this._css;
-    if (!css) {
-      var md = this.model,
-        template = '';
-      /**faz dessa maneira para o esta parte so ser processada uma vez */
-      css = super.css;
+class GridBox<L = unk> extends Parent<L, GridLy, iGrid<L>> {
+  ss(v: Properties) {
+    super.ss(v);
+    let i = this.i, tpt = '';
 
-      for (let i = 0; i < md.rows.length; i++) {
-        template += `${md.rows[i]} `;
-      }
+    for (let row of i.rows)
+      tpt += `${row} `;
+    tpt += '/';
+    for (let col of i.cols)
+      tpt += `${col} `;
 
-      template += '/';
-
-      for (let i = 0; i < md.columns.length; i++) {
-        template += `${md.columns[i]} `;
-      }
-
-      css['grid-gap'] = space(md.gap);
-      css['grid-template'] = template;
-    }
-    return css;
+    v.gridGap = space(i.gap);
+    v.gridTemplate = tpt;
   }
-  createPart(index: number) {
-    return this
-      .addBox(div(C.grid, [div(), div(), div()]), index)
-      .css(this.css);
+  createPart(pag: int) {
+    return this.addBox(div(0, [div(), div(), div()]), pag);
   }
-  fitIn(child: IBox<GridLayout>, css: Dic) {
-    var l = child.ly;
+  fitIn(css: Properties, ly: GridLy) {
     return {
-      'grid-area': `${l.r + 1} / ${l.c + 1} / span ${l.rspan || 1} / span ${l.cspan || 1}`,
-      margin: (l.margin || ["auto"]).join('px ') + 'px'
+      'grid-area': `${ly.r + 1} / ${ly.c + 1} / span ${ly.rspan || 1} / span ${ly.cspan || 1}`,
+      margin: (ly.margin || ["auto"]).join('px ') + 'px'
     };
-  }
-}
-
-
-/* ************************************************************** */
-/* ****************************CHART***************************** */
-/* ************************************************************** */
-
-interface ICustomBox<L = unknown> extends IBox<L> {
-  tp: "custom";
-  render(p: BoxParent): Promise<any>;
-}
-class CustomBox<L = unknown> extends Box<L, ICustomBox<L>> {
-  get css() { return this._css || <Dic>(this._css = this.p.fitIn(this.model, {})) }
-  write(pag: number) {
-    let
-      md = this.model,
-      p = this.p;
-    md.render(p);
-  }
-  part(index: number) {
-    return this.parts[index];
   }
 }
 
@@ -2508,29 +1386,15 @@ class CustomBox<L = unknown> extends Box<L, ICustomBox<L>> {
 interface GraphicStyle {
 
 }
-interface IGraphicBox<L = unknown> extends IBox<L> {
+interface iGraphic<L = unk> extends iBox<L> {
   tp: "graphic";
   is?: GraphicStyle;
 }
-class GraphicBox<L = unknown> extends Box<L, IGraphicBox<L>> {
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
-  } get css() {
-    return this._css || (this._css = {});
+class Graphic<L = unk> extends SBox<L, iGraphic<L>> {
+  ss() { }
+  data(pag: int) {
+    return div();
   }
-  write(index: number) {
-    const model = this.model,
-      parent = this.p;
-    //this.addBox(m(new gr.SvgViewer({ })), index);
-    parent.append(model, index);
-
-    return index;
-  }
-  part(index: number) {
-    return this.parts[index];
-  }
-  static default: Partial<IImgBox> = {
-  };
 }
 
 
@@ -2538,133 +1402,33 @@ class GraphicBox<L = unknown> extends Box<L, IGraphicBox<L>> {
 /* ************************************************************** */
 /* ****************************SYMBOL**************************** */
 /* ************************************************************** */
-export interface ISymbolBox<T = any> extends IBox<T> {
-  tp: "symbol";
-  dt: string;
-  dir?: string;
-}
-class SymbolBox<L = unknown> extends Box<L, ISymbolBox<L>> {
-  get css() {
-    return this.data ? this.data.$.css : this.layout;
-  }
-
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
-  }
-  data: Boxes<any>;
-  valid(index) {
-    let model = this.model, data: Boxes<any>;
-    if (this.data !== undefined)
-      data = this.data;
-    else {
-      let src = model.dir ? `${model.dir}.${model.dt}` : model.dt;
-      data = this.data = super.valid(index) && this.ctx.symb(src);
-      if (data) {
-        normBox(data);
-        //data.$.id = model.$.id;
-        Object.assign(data.ly, model.ly);
-      }
-      // @if DEBUG
-      else {
-        console.warn('symbol not found', src);
-      }
-      // @endif
-    }
-    return !!data;
-  }
-  write(index: number) {
-    let t = write(this.data, index, this.id, this.p);
-    for (let part in this.data.$.parts)
-      this.parts[part] = this.data.$.parts[part];
-    return t;
-  }
-  part(index: number) {
-    //// so não tem data returna o empty-box
-    //if (this.data && !(index in this.parts))
-    //  this.addBox(this.data.$.part(index), index);
-
-    ////return empty box
-    return this.parts[index];
-
-  }
-  transport(from: number, to: number) {
-    if (this.data)
-      this.data.$.transport(from, to);
-    super.transport(from, to);
-  }
-  clear() {
-    if (this.data && this.data.$)
-      this.data.$.clear();
-    super.clear();
-  }
-  static symbs(dt: ISymbolBox, list: string[]) {
-    list.push(dt.dt);
-  }
-}
-
-/* ************************************************************** */
-/* **************************PLACE HOLDER************************ */
-/* ************************************************************** */
-export interface IPHBox<T = unknown> extends IBox<T> {
+export interface iPH<T = any> extends iMBox<T> {
   tp: "ph";
-  val?: string;
+  bd: str;
 }
-class PHBox<L = unknown> extends Box<L, IPHBox<L>> {
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
+class PH<L = unk> extends MBox<L, iPH<L>> {
+  ss() { }
+  bd: iBoxes<L>;
+  valid(pag: int) {
+    let { i, ctx } = this, bd = ctx.calc(i.bd, this) as iBoxes<L> | str;
+    isS(bd) && (bd = { bd });
+    bd && assign(bd, { ly: i.ly });
+    return (this.bd = bd) && super.valid(pag);
   }
-  get css() {
-    return this.data ? this.data.$.css : this.layout;
-  }
-  data: IBox;
-  valid(index) {
-    let model = this.model, data: IBox;
-    if (this.data !== undefined)
-      data = this.data;
-    else {
-      let t = super.valid(index) ? <string | IBox>this.ctx.calc(model.val, this, index) : null;
-      if (t) {
-        this.data = data = isS(t) ?
-          <IPBox>{ tp: 'p', dt: [{ dt: t }] } :
-          cloneBox(t);
-
-        normBox(data);
-        Object.assign(data.ly, model.ly);
-      }
-      // @if DEBUG
-      else {
-        console.warn('value is not a valid box', model.val);
-      }
-      // @endif
-    }
-    return !!data;
-  }
-  write(index: number) {
-    let t = write(this.data, index, this.id, this.p);
-    for (let part in this.data.$.parts)
-      this.parts[part] = this.data.$.parts[part];
+  data(pag: int) {
+    let t = write(this.bd, pag, this.id, this.p);
+    for (let part in this.bd.$.parts)
+      this.parts[part] = this.bd.$.parts[part];
     return t;
   }
-  part(index: number) {
-    //// so não tem data returna o empty-box
-    //if (this.data && !(index in this.parts))
-    //  this.addBox(this.data.$.part(index), index);
-
-    ////return empty box
-    return this.parts[index];
-
-  }
-  transport(from: number, to: number) {
-    if (this.data)
-      this.data.$.transport(from, to);
-    super.transport(from, to);
+  transport() {
+    this.bd?.$.transport();
+    super.transport();
   }
   clear() {
-    if (this.data && this.data.$)
-      this.data.$.clear();
+    this.bd?.$.clear();
     super.clear();
   }
-
 }
 
 
@@ -2675,318 +1439,191 @@ class PHBox<L = unknown> extends Box<L, IPHBox<L>> {
 interface HrStyle extends Border {
 
 }
-interface IHrBox<L = unknown> extends IBox<L> {
+export interface iHr<L = unk> extends iBox<L> {
   tp: "hr";
   is?: HrStyle,
   o?: Ori;
 }
-class HrBox<L = unknown> extends Box<L, IHrBox<L>>{
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
-  } get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        p = this.p;
-      //,
-      //props = {}
-      //if (md.s)
-      //  for (let i = 0; i < md.s.length; i++)
-      //    Object.assign(props, th.byKey(md.s[i]));
-      //else Object.assign(props, th.byKey(void 0));
-
-      //if (md.is)
-      //  Object.assign(props, md.is);
-
-      var bd = border(Object.assign({}, theme.hr[md.s], md.is));
-
-      this._css = p.fitIn(md, {});
-      this._css[md.o == "v" ?
-        'border-left' :
-        'border-bottom'
-      ] = bd;
-    }
-    return this._css;
+class Hr<L = unk> extends SBox<L, iHr<L>>{
+  ss(v: Properties) {
+    let { o, s, is } = this.i;
+    v.border = "none";
+    v[o == "v" ? "borderLeft" : "borderTop"] = border({ ...theme.hr[s], ...is });
   }
-  write(index: number) {
-    var
-      model = this.model,
-      parent = this.p;
-    this.addBox(g('hr', [C.hr]).css(this.css), index);
-    //sheet = parent.part(/*model, */index);
+  data(pag: int) { return g('hr'); }
+}
 
-    parent.append(model, index);
-    if (parent.overflow(model, index))
-      parent.append(model, ++index);
+interface iNP<L = unk> extends iBox<L> { tp: "np"; }
+/**new pag */
+class NP<L = unk> extends SBox<L, iNP<L>>{
+  ss() { }
 
-    return index;
-  }
-  part(index: number) {
-    return this.parts[index];
+  view(pag: int) {
+    this.valid(pag) && pag++;
+    this.e = div();
+    this.p.append(this, this.start = pag);
+    return this.start;
   }
 }
 
-interface INewBox<L = unknown> extends IBox<L> { tp: "new"; }
-class NewBox<L = unknown> extends Box<L, INewBox<L>>{
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
-  }
-  get css() {
-    return this._css || (this._css = {});
-  }
-
-  write(index: number) {
-    //const model = this.model;
-    this.addBox(g('div'), ++index);
-
-    this.p.append(this.model, index);
-    //.part(/*model, */index).append();
-
-    return this.end = index;
-  }
-  part(index: number) {
-    return this.parts[index];
-  }
-
-}
-
-export interface IImgBox<T = unknown> extends IBox<T> {
+export interface iImg<T = unk> extends iBox<T> {
   tp: "img";
   is?: ImgStyle;
-  dt: string;
-  pars?: Dic<string>;
+  bd: str;
 }
-class ImgBox<L = unknown> extends Box<L, IImgBox<L>>{
-  clearStyle(): void {
-    throw new Error("Method not implemented.");
+class ImgBox<L = unk> extends SBox<L, iImg<L>>{
+
+  ss(v: Properties) {
+    this.i.is && styleImg(this.i.is, v);
   }
-  get css() {
-    if (!this._css) {
-      let
-        md = this.model,
-        p = this.p;
-
-      this._css = p.fitIn(md, styleImg(md.is));
-    }
-    return this._css;
+  data() {
+    return g('img', { src: this.ctx.img(this.i.bd) });
   }
-  write(index: number) {
-    var
-      model = this.model,
-      parent = this.p;
-
-    this.addBox(g('img', [C.box, C.img])
-      .prop("src", parent.ctx.img(model.dt, model.pars))
-      .css(this.css), index);
-
-    parent.append(model, index);
-    if (parent.overflow(model, index) == OFTp.out)
-      parent.append(model, ++index);
-    //.part(model, index)
-    //.append();
-
-    return index;
-  }
-  part(index: number) {
-    return this.parts[index];
-  }
-
-  static default: Partial<IImgBox> = {
-    is: {
-      w: 64,
-      h: 64
-    },
-    ub: true
-  };
 }
 /* ************************************************************** */
 /* ****************************RENDER**************************** */
 /* ************************************************************** */
-export type PBoxes<L = BodyLy> =
-  IBlockBox<L> |
-  ICol<L> |
-  IRow<L> |
-  ITableBox<L>;
-export type Boxes<L = any> =
-  IPBox<L> |
-  PBoxes<L> |
-  ISymbolBox<L> |
-  IHrBox<L> |
-  INewBox<L> |
-  IImgBox<L> |
-  IPHBox<L> |
-  IGridBox<L> |
-  ICustomBox<L> |
-  IGraphicBox<L> |
-  IRow<L> |
-  ICol<L>;
+export type iPBoxes<L = any> =
+  iDiv<L> |
+  iCol<L> |
+  iRow<L> |
+  iTb<L>;
+export type iBoxes<L = any> =
+  iP<L> |
+  iPBoxes<L> |
+  iPH<L> |
+  iHr<L> |
+  iNP<L> |
+  iImg<L> |
+  iGrid<L> |
+  iGraphic<L> |
+  iTr<L>;
 export interface Book {
-  sets?: Dic<string>;
-  dt?: PBoxes;
+  hd?: iBoxes<SideLayout>;
+  bd: ABoxes;
+  ft?: iBoxes<SideLayout>;
 
-  hd?: Boxes<SideLayout>;
-  ft?: Boxes<SideLayout>;
-
+  fill?: bool;
   /**header size */
-  hdSize?: number;
+  hdSz?: int;
 
   /**footer size */
-  ftSize?: number;
+  ftSz?: int;
   /**padding */
-  pad?: BoxSpace;
-  wm?: IPBox<WMLayout>;
-  top?: Boxes;
-  bottom?: Boxes;
-
-  symbs?: string[];
-  imgs?: string[];
-
+  // pad?: BoxSpace;
+  wm?: iP<WMLayout>;
 }
 /** */
 interface WMLayout {
   tp?;
 }
 
-export function render(box: IBox | string) {
-  if (!box)
+export type sbInput<L = void> = str | ABoxes<L>;
+export function render(bd: sbInput) {
+  if (!bd)
     return null;
-  if (isS(box))
-    return g("p", 0, box);
+  if (isS(bd))
+    return g("p", 0, bd);
 
   let
     r = S.empty,
     p: BoxParent = {
       ctx: {
-        fmt(this: any, value: unknown, exp: string) {
+        fmt(this: any, value: unk, exp: str) {
           return $.fmt(value, exp, {
             currency: (<any>this.dt).currency,
             currencySymbol: (<any>this.dt).currencySymbol || false,
             //refCurr:
           });
-        },
-        //calc(value: Expression, ctx: IBookContext, index?: number) {
+        }, pagCount: 1
+        //calc(value: Expression, ctx: IBookContext, index?: int) {
         //  return getValue(value, ctx, index);
         //},
         //img() { return ''; }
       },
-
-      getTextTheme: () => null,
-      fitIn: (_: IBox, css: Dic) => css,
       overflow: () => OFTp.in,
 
-      append(child: IBox) {
-        r = child.$.part(0)
-      }
+      append: (child: Box) => r = child.part(0)
     };
-  write(box, 0, 0, p);
+  write(bparse({ bd }, "bd"), 0, 0, p);
   return r;
 }
 
-export const sheet = (bk: Book, w: number) => g('article', C.sheet, render(bk.dt)).css({
-  background: "#fff",
+export const sheet = (bd: sbInput, w: int) => g('article', "_ sheet", render(bd)).css({
   width: `${w}px`,
   marginTop: `40px`,
   padding: space([0, 6]),
-  whiteSpace: "pre-wrap"
+  ...styleText(theme.text, {})
 });
-//function pag(ctx: Context, bk: Book, w: number, h: number, index: number) {
+//function pag(ctx: Context, bk: Book, w: int, h: int, index: int) {
 
 //  return [div, bd];
 //}
-export async function sheets(ctx: Context, container: S, bk: Book, w: number, h: number) {
-  let content: S, bd: S, currentPag = -1;
-  write(bk.dt, 0, DTParts.d, {
+export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
+  let
+    height: int,
+    hs = bk.hdSz || theme.hdSize,
+    fs = bk.ftSz || theme.ftSize;
+  write(bparse(bk, "bd"), 1, DTParts.bd, {
     ctx,
     dt: ctx.dt,
-    getTextTheme: () => null,
-    fitIn(child, css) {
-      if (child.ly.fill)
-        css.minHeight = "100%";
-      return Object.assign(css, { marginTop: 0, marginBottom: 0 });
-    },
-    overflow(child, index: number) {
+    fitIn: (css) => (bk.fill && (css.minHeight = `calc(100% - ${hs + fs}px)`)),
+    // assign(css, { marginTop: 0, marginBottom: 0 })
+    overflow: (child, pag: int) =>
+      Math.max(Math.floor(child.$.part(pag).e.offsetHeight) - height, OFTp.in),
+    append(ch, pag) {
+      ctx.pagCount = pag;
       let
-        cRect = child.$.part(index).rect(),
-        pRect = rect(bd);
+        pad = theme.padding,
+        hd = g('header').css("height", `${hs}px`),
+        ft = g('footer').css("height", `${fs}px`),
+        part: S,
+        p: BoxParent = {
+          ctx,
+          dt: ctx.dt,
+          overflow: () => OFTp.in,
+          append(ch) { part.add(ch.part(pag)); }
+        };
 
-      return Math.floor(cRect.bottom) > Math.ceil(pRect.bottom) ? OFTp.out : OFTp.in;
-    },
-    justALittle(child, index) {
-      let
-        cRect = child.$.part(index).rect(),
-        pRect = rect(bd);
+      height = g("article", "_ sheet", [hd, ch.part(pag), ft])
+        .addTo(container)
+        .css({
+          background: "#fff",
+          width: `${w}px`,
+          height: `${h}px`,
+          padding: space(pad),
+          whiteSpace: 'pre-wrap',
+          ...styleText(theme.text, {})
+        }).e.clientHeight - (hs + fs + pad[0] * 2);
 
-      return (pRect.bottom - cRect.top) < minBoxSize;
-    },
-    append(dt, index) {
-      if (index != currentPag) {
-        let
-          pad = bk.pad || theme.padding,
-          hd = g('header').css("height", `${bk.hdSize || theme.hdSize}px`),
-          ft = g('footer').css("height", `${bk.ftSize || theme.ftSize}px`),
-          p: BoxParent = {
-            ctx,
-            dt: ctx.dt,
-            getTextTheme: () => null,
-            fitIn: (_, css) => css,
-            overflow: () => OFTp.in,
-            append(dt) { part.add(dt.$.part(index)); }
-          };
-
-        bd = g('section', C.body);
-        content = g('article', C.sheet, hd)
-          .addTo(container)
-          .css({
-            background: '#fff',
-            width: `${w}px`,
-            height: `${h}px`,
-            padding: space(pad),
-            whiteSpace: 'pre-wrap'
-          });
-        let part = content;
-        (ctx.parts ||= [])[index] = content;
-
-        if (bk.top) {
-          write(bk.top, index, DTParts.t, p);
-          h -= height(bk.top.$.part(index));
-        }
-        content.add(bd);
-        if (bk.bottom) {
-          write(bk.bottom, index, DTParts.b, p);
-          h -= height(bk.bottom.$.parts[index]);
-        }
-
-        if (bk.hd) {
-          part = hd;
-          write(bk.hd, index, DTParts.h, p);
-        }
-
-        content.add(ft);
-        if (bk.ft) {
-          part = ft;
-          write(bk.ft, index, DTParts.f, p);
-        }
-
-        h -= (bk.hdSize || theme.hdSize) + (bk.ftSize || theme.ftSize) + pad[0] * 2;
-        if (h <= 0)
-          throw "error";
-
-        if (bk.wm) {
-          part = div(C.watermark);
-          write(bk.wm, index, DTParts.b, p);
-        }
-        bd.css('height', h + 'px');
-        //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
-
+      if (bk.hd) {
+        part = hd;
+        write(bk.hd, pag, DTParts.h, p);
       }
-      bd.add(dt.$.part(index));
+
+      if (bk.ft) {
+        part = ft;
+        write(bk.ft, pag, DTParts.f, p);
+      }
+
+      if (bk.wm) {
+        part = div("_ wm");
+        write(bk.wm, pag, DTParts.b, p);
+      }
+      //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
     }
   });
   if (ctx.wait)
-    await Promise.all(ctx.wait);
+    for (let w of ctx.wait) w();
+  clear(bk);
   return container;
 }
-export function dblSheets(container: S, w: number) {
+function clear({ hd, bd, ft }: Book) {
+  hd?.$.clear();
+  (bd as iBoxes).$.clear();
+  ft?.$.clear();
+}
+export function dblSheets(container: S, w: int) {
   let t = container.childs().remove();
   for (let i = 0; i < t.length; i += 2) {
     let t2 = <(HTMLElement | S)[]>t.slice(i, i + 2);
@@ -2994,7 +1631,7 @@ export function dblSheets(container: S, w: number) {
       borderLeft: '1px dashed #AAA',
       margin: 0
     }));
-    container.add(div(C.sheet, t2).css({
+    container.add(div("_ sheet", t2).css({
       width: (w * 2) + "px",
       display: 'flex',
       flexDirection: 'row'
@@ -3003,92 +1640,54 @@ export function dblSheets(container: S, w: number) {
   return container;
 }
 
-type Sz = [w: number, h: number]
+
+type Sz = [w: int, h: int]
 export const medias = {
   A4: <Sz>[210 * units.mm, 297 * units.mm],
   A5: <Sz>[148 * units.mm, 210 * units.mm],
-  A3: <Sz>[297 * units.mm, 420 * units.mm]
+  A3: <Sz>[297 * units.mm, 420 * units.mm],
 }
 export type Media = keyof (typeof medias);
 export async function print(container: S, o: Ori, media: Media, cb: () => Task<void>) {
   let
-    pags = container.childs(),
-    style = g('style', null, `@page{size:${media} ${(o == "h" ? 'landscape' : 'portrait')};}`);
+    pags = container.childs().css({ display: "block" }, true).uncss(["padding"]),
+    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${media} ${(o == "h" ? 'landscape' : 'portrait')};margin:${space(theme.padding)}}`);
 
   g(document.body).add(pags);
   style.addTo(document.head);
   await cb();
   style.remove();
-  container.add(pags);
+  container.add(pags.css({ padding: space(theme.padding) }).uncss(["display"]));
 }
 
 interface WaterMark {
   dt/*: m.Child*/;
 }
-export interface BodyLy {
-  fill?: boolean;
-}
 
-export type MediaType = (child: Boxes, pag: number) => any;
-
-export function normalize(dt: Book) {
-  let
-    symbs = dt.symbs ||= [],
-    t = (dt: IBox) => boxes[dt.tp].symbs(dt, symbs);
-
-  t(normBox(dt.dt));
-
-  dt.hd && t(normBox(dt.hd));
-  dt.top && t(normBox(dt.top));
-  dt.bottom && t(normBox(dt.bottom));
-  dt.ft && t(normBox(dt.ft));
-
-  return dt;
-}
+export type MediaType = (child: iBoxes, pag: int) => any;
 
 /* ************************************************************** */
 /* *****************************COLLECTIONS********************** */
 /* ************************************************************** */
 
-const spans: Dic<{
-  isEmpty(model): boolean;
-  break: boolean;
-  new(model: ISpanBase, parent: PBox): SpanBase;
-}> = {
-  ["t"]: Span,
-  ["s"]: Scalar,
-  ["img"]: Img
-};
-export const boxes: Dic<{
+export const boxes: Dic<{ new(i, p: BoxParent<any>, id: int): Box<any, any>; }> = {
+  p: P,
+  d: Div,
 
-  // replace(model: IBox, key: string, newValue: IBox): boolean,
-  normalize(model: IBox): IBox,
-  clone(model): IBox,
-  isEmpty(model): boolean;
-  new(model, parent: BoxParent<any>, id: number): Box<any, any, any>;
-  symbs(model: IBox, list: string[]);
-}> = {
-  ["p"]: PBox,
-  ["block"]: BlockBox,
+  graphic: Graphic,
+  grid: GridBox,
+  col: Col,
+  row: Row,
+  img: ImgBox,
+  new: NP,
+  hr: Hr,
+  ph: PH,
 
-  ["graphic"]: GraphicBox,
-  ["symbol"]: SymbolBox,
-  ["custom"]: CustomBox,
-  ["grid"]: GridBox,
-  ["col"]: ColBox,
-  ["row"]: RowBox,
-  ["img"]: ImgBox,
-  ["new"]: NewBox,
-  ["hr"]: HrBox,
-  ["ph"]: PHBox,
-
-  ["table"]: Tb,
-  ["tr"]: Tr,
-  ["th"]: Th,
-  ["tg"]: Tg
+  tb: Tb,
+  tr: Tr,
 };
 export const theme: Theme = {
-  padding: [4 * units.mm, 7 * units.mm],
+  padding: [7 * units.mm, 10 * units.mm],
   hdSize: 12 * units.mm,
   ftSize: 12 * units.mm,
 
@@ -3131,18 +1730,18 @@ export const theme: Theme = {
   },
   box: {
     box: {
-      bd: {
+      br: {
         style: 'solid',
         color: "#000",
         width: 1
       },
       pd: [7 * units.pt, 5 * units.pt],
-      mg: [4 * units.pt, 2 * units.pt],
+      // mg: [4 * units.pt, 2 * units.pt],
       rd: 2
     },
     filled: {
       pd: [3 * units.pt, 2 * units.pt],
-      mg: [2 * units.pt, 1 * units.pt],
+      // mg: [2 * units.pt, 1 * units.pt],
       rd: 1,
       tx: 'white',
       bg: {
@@ -3152,7 +1751,7 @@ export const theme: Theme = {
     },
     blank: {
       pd: [7 * units.pt, 5 * units.pt],
-      mg: [4 * units.pt, 2 * units.pt],
+      // mg: [4 * units.pt, 2 * units.pt],
       rd: 2,
       tx: "black",
       bg: {
@@ -3180,11 +1779,11 @@ export const theme: Theme = {
   },
   tables: {
     '': {
-      mg: [2 * units.pt, 1 * units.pt],
+      // mg: [2 * units.pt, 1 * units.pt],
       hd: {
         tx: 'white_strong',
         bg: { dt: "#444" },
-        bd: [null, null, {
+        br: [null, null, {
           color: "#666"
         }, null],
         pd: [1, 3],
@@ -3196,7 +1795,7 @@ export const theme: Theme = {
         tx: 'white_strong',
         bg: { dt: "#444" },
         pd: [1, 3],
-        bd: [{
+        br: [{
           color: "#666"
         }, null, null, null],
       },

@@ -1,20 +1,21 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "removeComments": false,
     "lib": [
       "ES2021.String",
       "DOM"
     ],
+    "removeComments":true,
     // "declaration": true,
     "inlineSourceMap": true,
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "alwaysStrict": true,
+    // "alwaysStrict": true,
     "noImplicitThis": true
   },
   "compileOnSave": true,
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "old"
   ]
 }

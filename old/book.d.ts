@@ -1,5 +1,5 @@
 import { S } from "galho";
-import { Properties } from "galho/css";
+import { Properties } from "galho/css.js";
 declare type Key = string | number;
 interface Dic<T = any> {
   [key: string]: T;
