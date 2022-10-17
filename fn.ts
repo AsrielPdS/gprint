@@ -1,4 +1,4 @@
-import { assign, int, isN, isS, str, unk } from "galho/util.js";
+import { assign, int, isA, isN, isS, str, unk } from "galho/util.js";
 import { CLy, iBox, iBoxes, iCol, iHr, iP, iPH, iRow, iTb, iTr, RLy, Align, TbColInfo, TrLy, iImg, ASpan } from "./book.js";
 
 /**
@@ -18,7 +18,7 @@ export const ph = <L = any>(bd: str): iPH<L> => ({ tp: "ph", bd });
 /**table with head */
 export const tbh = <L = any>(cols: TbColInfo[], hd: iTr, ...bd: iTr[]): iTb<L> => ({ tp: "tb", cols, hd, bd });
 /**table */
-export const tb = <L = any>(cols: TbColInfo[], ...bd: iTr[]): iTb<L> => ({ tp: "tb", cols, bd });
+export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]): iTb<L> => ({ tp: "tb", cols, bd: bd.map(i => isA(i) ? tr(...i) : i) });
 /** full table(table with head, body and foot) */
 export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr): iTb =>
   ({ tp: "tb", cols, hd, bd: Array.isArray(bd) ? bd : [bd], ft });
@@ -27,9 +27,9 @@ export const img = (bd: str, w: int, h: int): iImg => ({ tp: "img", bd, is: { w,
 
 export const p = <L = any>(bd?: ASpan, style?: str, al?: Align): iP<L> =>
   /*isS(bd) && !al && !style ? bd :*/({ s: style, is: al ? { al } : void 0, bd });
-/**expression */
+/** @deprecated expression */
 export const e = <L = any>(bd?: str, fmt?: str | 0, style?: str, al?: Align): iP<L> =>
-  ({ s: style || undefined, is: al && { al }, bd: [{ tp: "e", bd, fmt: fmt || undefined }] });
+  ({ s: style || undefined, is: al && { al }, bd: [{ tp: "e", bd: fmt ? `fmt(${bd},${fmt.split(';').reverse()})` : bd }] });
 //-----------------extras----------------
 
 // export type DomAlign = "center" | "justify" | "left" | "right" | "start" | "end";
@@ -45,19 +45,16 @@ export const dateP = (data: str): iP =>
 // /** block of paragraphs*/
 // export const block = (...bd: (iBoxes | str)[]): iCol => ({ tp: "col", bd });
 /**datetime paragraph */
-export const dtP = (bd: str): iP => ({ bd: [{ tp: "e", bd, fmt: 'd;f' }] });
+export const dtP = (bd: str): iP => ({ bd: [{ tp: "e", bd:`fmt(${bd},D)` }] });
 
 /**define inline style */
 export const is = <T extends iBox>(box: T, is: T["is"]): T => assign(box, { is });
 /**define layout */
 export const l = <T extends iBox>(box: T, ly: T["ly"]): T => assign(box, { ly });
-export function timerP(data: str): iBoxes {
-  return { s: 'number', bd: [{ tp: "e", bd: data, fmt: 'n;t' }] };
-}
-/** scalar */
-export function s<L = any>(data: str, style?: str, fmt?: str, al?: Align): iBoxes<L> {
-  return { s: style, is: { al: al || void 0 }, bd: [{ tp: "e", bd: data, fmt: fmt, }] };
-}
+// /** scalar */
+// export function s<L = any>(data: str, style?: str, fmt?: str, al?: Align): iBoxes<L> {
+//   return { s: style, is: { al: al || void 0 }, bd: [{ tp: "e", bd: fmt?`fmt(${bd},D)`:bd }] };
+// }
 export const st = <L = any>(value: str, tp?: "t" | "s" | "img", fmt?: str) => tp == "s" ? s<L>(value, "strong", fmt) : p<L>(value, "strong");
 export function currPH(data: str): iBoxes {
   return { bd: [{ bd: data }], is: { al: "e" } }

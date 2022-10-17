@@ -1,6 +1,7 @@
 import { div, empty, g, S } from "galho";
 import { Properties } from "galho/css.js";
 import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
+import { numbInFull } from "./scalar";
 
 
 const hasProp = (obj: object) => Object.keys(obj).length;
@@ -16,7 +17,6 @@ export type ST = "t" | "e" | "img";
 export interface Context {
   dt?: unk;
   temp?: Dic<unk>;
-  fmt?(value: unk, exp: str, opts?: Dic): str;
   calc?(value: str, s: Scope, pag?: int): unk;
   img?(path: str): str;
   pagCount?: int;
@@ -77,8 +77,6 @@ export enum units {
   pt = 96 / 72,
   px = 1
 }
-
-
 /* ************************************************************** */
 /* **************************INTERFACE*************************** */
 /* ************************************************************** */
@@ -362,18 +360,35 @@ interface CalcOpts {
   funcs(name: str, args: any[]): any;
   vars(name: str, obj?: boolean): any;
 }
-interface Settings {
-  fmt?(value: unk, exp: str, opts: Dic): str;
-  scalar?(value: int, fmt: str): any;
+// interface Settings {
+//   scalar?(value: int, fmt: str): any;
 
-}
-export const $: Settings = {}
+// }
+// export const $: Settings = {}
+type Fmts =
+/**time          */"t" |
+/**date          */"d" |
+/**date & time   */"D" |
+/**currency      */"$" |
+/**percent       */"%" |
+/**decimal(numb) */"n" |
+/**integer       */"i";
 type CPU = (expression: str, scp: Scope, pag?: int) => any;
 type ExpFn = (this: { /**pag*/p: int, s: Scope }, ...args: any[]) => any;
 /** central processor unit */
 export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>): CPU {
   let
+    fmts: Dic<Intl.DateTimeFormat | Intl.NumberFormat> = {
+      d: new Intl.DateTimeFormat("pt", { dateStyle: "short" }),
+      t: new Intl.DateTimeFormat("pt", { timeStyle: "short" }),
+      D: new Intl.DateTimeFormat(),
+      $: new Intl.NumberFormat("pt", { style: "currency" }),
+      f: new Intl.NumberFormat(),
+      i: new Intl.NumberFormat("pt", { style: "decimal" }),
+      '%': new Intl.NumberFormat("pt", { style: "percent" }),
+    },
     funcs = <Dic<ExpFn>>{
+      numbInFull,
       id() { return this.s.id },
       set(key: str, value) { return this.s.dt[key] = value },
       //set and get data to temporary storage
@@ -385,6 +400,10 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       },
       pags() { return this.s.ctx.pagCount },
       pag() { return this.p; },
+      fmt(v: Date | number | string, pattern?: Fmts) {
+        isS(v) && (v = new Date());
+        return fmts[pattern ||= isN(v) ? "n" : v.getHours() || v.getMinutes() ? "D" : "d"].format(<any>v);
+      },
       ...extraFn
       //exchange(currency: str) {
       //  if (!currency)
@@ -490,8 +509,8 @@ interface iExp extends iSpan<SpanStyle> {
   tp: "e";
   /**input type */
   it?: str;
-  /**format */
-  fmt?: str;
+  // /**format */
+  // fmt?: str;
 }
 interface iImgSpan extends iSpan<ImgStyle> {
   tp: "img";
@@ -504,14 +523,14 @@ interface iImgSpan extends iSpan<ImgStyle> {
 type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => S
 
 export const spans: Dic<Span> = {
-  t: <Span<iText>>(({ is, bd: dt }) => {
+  t: <Span<iText>>(({ is, bd }) => {
     let t = g('span');
     is && t.css(styleText(is, {}));
-    return dt ? t.text(dt) : t.html(empty);
+    return bd ? t.text(bd) : t.html(empty);
   }),
-  e: <Span<iExp>>(({ fmt, bd: dt, is }, p, pag) => {
-    let v: any = p.ctx.calc(dt, p, pag);
-    fmt && (v = p.ctx.fmt(v, fmt));
+  e: <Span<iExp>>(({ bd, is }, p, pag) => {
+    let v: any = p.ctx.calc(bd, p, pag);
+    // fmt && (v = p.ctx.fmt(v, fmt));
     if (v || v === 0) {
       let t = g('code', 0, v);
       is && t.css(styleText(is, {}));
@@ -783,7 +802,7 @@ interface iParentBase<L = unknown> extends iMBox<L> {
   hd?: ABoxes;
 
   /**body */
-  bd?: (iBoxes)[];
+  bd?: iBoxes[];
 
   /**footer */
   ft?: ABoxes;
@@ -904,10 +923,11 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
   private _lCss: Dic;
   private _lItems: Array<{ s: S, p: iP }>;
   listItem(p: iP) {
+    throw "not implemented yet";
     let
       l = this.i.l,
       css = this._lCss || styleText(l, {}),
-      s = g('span', ['li'], $.scalar(p.li, l.fmt)).css(css);
+      s = g('span', ['li'],/* $.scalar(p.li, l.fmt) */).css(css);
     if (true) {
       let items = this._lItems || (this._lItems = []);
       items.push({ s: s, p: p });
@@ -1179,7 +1199,7 @@ export interface iTb<L = unk> extends iParentBase<L> {
   tp: "tb";
   is?: TableStyle;
   hd?: iTr;
-  bd?: iTr[];
+  bd?: (iTr)[]//(iTr | iBoxes<TrLy>[])[];
   ft?: iTr;
   empty?: iTr;
   /**columns */
@@ -1529,13 +1549,14 @@ export function render(bd: sbInput) {
     r = S.empty,
     p: BoxParent = {
       ctx: {
-        fmt(this: any, value: unk, exp: str) {
-          return $.fmt(value, exp, {
-            currency: (<any>this.dt).currency,
-            currencySymbol: (<any>this.dt).currencySymbol || false,
-            //refCurr:
-          });
-        }, pagCount: 1
+        // fmt(this: any, value: unk, exp: str) {
+        //   return $.fmt(value, exp, {
+        //     currency: (<any>this.dt).currency,
+        //     currencySymbol: (<any>this.dt).currencySymbol || false,
+        //     //refCurr:
+        //   });
+        // }, 
+        pagCount: 1
         //calc(value: Expression, ctx: IBookContext, index?: int) {
         //  return getValue(value, ctx, index);
         //},
