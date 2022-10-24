@@ -1,7 +1,6 @@
-import { div, empty, g, S } from "galho";
-import { Properties } from "galho/css.js";
-import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
-import { numbInFull } from "./scalar";
+import { Properties, div, empty, g, S } from "galho";
+import { arr, assign, bool, def, Dic, float, fmt, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
+import { numbInFull } from "./scalar.js";
 
 
 const hasProp = (obj: object) => Object.keys(obj).length;
@@ -365,28 +364,11 @@ interface CalcOpts {
 
 // }
 // export const $: Settings = {}
-type Fmts =
-/**time          */"t" |
-/**date          */"d" |
-/**date & time   */"D" |
-/**currency      */"$" |
-/**percent       */"%" |
-/**decimal(numb) */"n" |
-/**integer       */"i";
 type CPU = (expression: str, scp: Scope, pag?: int) => any;
 type ExpFn = (this: { /**pag*/p: int, s: Scope }, ...args: any[]) => any;
 /** central processor unit */
 export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>): CPU {
   let
-    fmts: Dic<Intl.DateTimeFormat | Intl.NumberFormat> = {
-      d: new Intl.DateTimeFormat("pt", { dateStyle: "short" }),
-      t: new Intl.DateTimeFormat("pt", { timeStyle: "short" }),
-      D: new Intl.DateTimeFormat(),
-      $: new Intl.NumberFormat("pt", { style: "currency" }),
-      f: new Intl.NumberFormat(),
-      i: new Intl.NumberFormat("pt", { style: "decimal" }),
-      '%': new Intl.NumberFormat("pt", { style: "percent" }),
-    },
     funcs = <Dic<ExpFn>>{
       numbInFull,
       id() { return this.s.id },
@@ -400,10 +382,7 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       },
       pags() { return this.s.ctx.pagCount },
       pag() { return this.p; },
-      fmt(v: Date | number | string, pattern?: Fmts) {
-        isS(v) && (v = new Date());
-        return fmts[pattern ||= isN(v) ? "n" : v.getHours() || v.getMinutes() ? "D" : "d"].format(<any>v);
-      },
+      fmt,
       ...extraFn
       //exchange(currency: str) {
       //  if (!currency)
@@ -791,7 +770,7 @@ interface BlockList extends SpanStyle {
   /**format */
   fmt?: str;
 }
-export type ABoxes<L = unk> = iBoxes<L> | iBoxes<BlockLy>[];
+export type ABoxes<L = unk> = iBoxes<L> | iBoxes<DivLy>[];
 interface iParentBase<L = unknown> extends iMBox<L> {
   $?: Parent<L, any>;
   l?: BlockList;
@@ -969,22 +948,24 @@ interface BlockColumn {
   count?: int;
   gap?: int;
 }
-export interface BlockLy {
+export interface DivLy {
   /**is list item */
   li?: boolean;
+  /**Margin in pixels*/
+  mg?: float | [top: float, bottom: float];
 }
 
-export interface iDiv<L = unk> extends iParent<L, BlockLy> {
+export interface iDiv<L = unk> extends iParent<L, DivLy> {
   tp: "d"
   cols?: BlockColumn;
 }
-class Div<L = unk> extends Parent<L, BlockLy, iDiv<L>> {
+class Div<L = unk> extends Parent<L, DivLy, iDiv<L>> {
   ss(css: Properties) {
-    let md = this.i;
+    let i = this.i;
     /**faz dessa maneira para o esta parte so ser processada uma vez */
     super.ss(css);
-    if (md.cols) {
-      let c = md.cols;
+    if (i.cols) {
+      let c = i.cols;
       css.columnWidth = c.width + "px";
       css.columnCount = c.count;
       css.columnGap = c.gap + '%';
@@ -997,7 +978,12 @@ class Div<L = unk> extends Parent<L, BlockLy, iDiv<L>> {
     return this.addBox(div(), index);
   }
 
-  fitIn() {
+  fitIn(css: Properties, ly: CLy) {
+    if (ly.mg) {
+      let [t, b] = arr(ly.mg);
+      css.marginTop = t + "px";
+      css.marginBottom = def(b, t) + "px"
+    }
   }
 }
 export type BlockT = Div;
@@ -1758,7 +1744,7 @@ export const theme: Theme = {
       },
       pd: [7 * units.pt, 5 * units.pt],
       // mg: [4 * units.pt, 2 * units.pt],
-      rd: 2
+      rd: 5
     },
     filled: {
       pd: [3 * units.pt, 2 * units.pt],

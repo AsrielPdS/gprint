@@ -1,4 +1,4 @@
-import { Styles } from "galho/css.js";
+import { Styles } from "galho";
 
 export const bookCss = (): Styles => ({
   "._.sheet": {
