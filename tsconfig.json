@@ -7,7 +7,7 @@
     ],
     "removeComments":true,
     "inlineSourceMap": true,
-    "module": "CommonJS",
+    // "module": "CommonJS",
     "moduleResolution": "Node",
     "noImplicitThis": true
   },

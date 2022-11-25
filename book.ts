@@ -69,7 +69,7 @@ export const enum DTParts {
   w = -5,
 
 }
-export enum units {
+export const enum units {
   cm = 96 / 2.54,
   mm = cm / 10,
   in = 96,
@@ -134,8 +134,6 @@ interface ImgStyle {
   border?: Border | [Border, Border, Border, Border];
   efect?: Efect;
   clip?: [int, int, int, int];
-  h?: int,
-  w?: int;
 }
 interface Background {
   tp?: 'img' | 'color';
@@ -207,11 +205,11 @@ const space = (p: BoxSpace) => p.map(p => p + 'px').join(' ')
 
 const buildShadow = (shadow: Shadow[]) =>
   shadow.map(sh => `${sh.inset ? 'inset' : ''} ${sh.x}px ${sh.y}px ${sh.blur}px ${sh.spread}px ${sh.color}`).join(',');
-function styleImg(style: ImgStyle, css: Properties) {
+function styleImg(style: ImgStyle, size: ImgSize, css: Properties) {
   if (style) {
     if (style.border)
       if ('length' in style.border)
-        Object.assign(css, <Properties>{
+        assign(css, <Properties>{
           borderTop: border(style.border[0]),
           borderRight: border(style.border[1]),
           borderBottom: border(style.border[2]),
@@ -240,9 +238,13 @@ function styleImg(style: ImgStyle, css: Properties) {
 
     if (style.clip)
       css.clip = `rect(${style.clip[0]}px, ${style.clip[1]}px, ${style.clip[2]}px, ${style.clip[3]}px)`;
-
-    css.width = style.w + 'px';
-    css.height = style.h + 'px';
+  }
+  if (isS(size)) {
+    css[size == "w" ? "width" : "height"] = '100%'
+  } else {
+    let [w, h] = arr(size);
+    css.width = w + 'px';
+    css.height = (h || w) + 'px';
   }
   return css;
 }
@@ -371,7 +373,7 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
   let
     funcs = <Dic<ExpFn>>{
       numbInFull,
-      id() { return this.s.id },
+      id() { return this.s.dt[$mapIndex]; },
       set(key: str, value) { return this.s.dt[key] = value },
       //set and get data to temporary storage
       temp(k, v?) { return (this.s.ctx.temp ||= {})[k] = def(v, this.s.ctx.temp[k]) },
@@ -491,14 +493,15 @@ interface iExp extends iSpan<SpanStyle> {
   // /**format */
   // fmt?: str;
 }
-interface iImgSpan extends iSpan<ImgStyle> {
+export type ImgSize = float | [w: float, h: float] | 'w' | 'h';
+export interface IImg {
   tp: "img";
-  width?: int;
-  height?: int;
-  base?: 'width' | 'height';
-  pars: Dic<str>;
-  calc?: boolean
+  sz?: ImgSize;
+  bd: str;
+  // pars: Dic<str>;
+  calc?: bool;
 }
+type iImgSpan = iSpan<ImgStyle> & IImg;
 type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => S
 
 export const spans: Dic<Span> = {
@@ -516,16 +519,10 @@ export const spans: Dic<Span> = {
       return t;
     }
   }),
-  img: <Span<iImgSpan>>(({ width: w, height: h, bd: dt, base, calc, is }, p, pag) => {
-    let css = styleImg(is, {});
-    if (base) {
-      css[base] = '100%'
-    } else {
-      css.width = (w || 64) + 'px';
-      css.height = (h || 64) + 'px';
-    }
+  img: <Span<iImgSpan>>(({ sz, bd, calc, is }, p, pag) => {
+    let css = styleImg(is, sz, {});
     if (calc) {
-      let t = p.ctx.calc(dt, p, pag);
+      let t = p.ctx.calc(bd, p, pag);
       if (isS(t))
         return g('img', { src: t }).css(css);
       else {
@@ -537,7 +534,7 @@ export const spans: Dic<Span> = {
       }
     }
     else return g('img', {
-      src: p.ctx.img(dt)
+      src: p.ctx.img(bd)
     }).css(css);
   })
 };
@@ -608,6 +605,7 @@ abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
   abstract part(pag: int): S;
   abstract view(pag: int): int;
   clear() { delete this.i.$; }
+  clearData() { delete this._d; }
   /**self style */
   abstract ss(v: Properties): void;
 }
@@ -640,6 +638,7 @@ abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
   /**@deprecated provavelmento so é util para o edit */
   end: int;
   view(pag: int) {
+
     this.start = this.end = pag;
     if (this.valid(pag))
       this.data(pag);
@@ -816,11 +815,12 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
       let
         dt = this.dt as MapContext,
         range: Object[] = [], t = create(bd[0], this);
-      console.log(this);
+
       dt.pd = { [pag]: range };
 
       if (l(dt))
         for (let i = 0; i < l(dt); i++) {
+          if (i) t.clearData();
           let row = dt[i];
           if (row) row[$mapIndex] = i;
 
@@ -938,6 +938,15 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     (ft as iBoxes)?.$?.clear();
 
     super.clear();
+  }
+  clearData() {
+    let { hd, bd, ft } = this.i;
+    for (let i of bd)
+      i.$?.clearData();
+
+    (hd as iBoxes)?.$?.clearData();
+    (ft as iBoxes)?.$?.clearData();
+    super.clearData();
   }
 }
 export type ParentT = Parent;
@@ -1328,6 +1337,11 @@ class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
       i.$?.clear();
     super.clear();
   }
+  clearData() {
+    for (let i of this.i.bd)
+      i.$?.clearData();
+    super.clearData();
+  }
 }
 
 
@@ -1435,6 +1449,10 @@ class PH<L = unk> extends MBox<L, iPH<L>> {
     this.bd?.$.clear();
     super.clear();
   }
+  clearData() {
+    this.bd?.$.clearData();
+    super.clearData();
+  }
 }
 
 
@@ -1472,15 +1490,12 @@ class NP<L = unk> extends SBox<L, iNP<L>>{
   }
 }
 
-export interface iImg<T = unk> extends iBox<T> {
-  tp: "img";
-  is?: ImgStyle;
-  bd: str;
-}
-class ImgBox<L = unk> extends SBox<L, iImg<L>>{
+export type iImgBox<T = unk> = iBox<T> & IImg & { is?: ImgStyle };
+class ImgBox<L = unk> extends SBox<L, iImgBox<L>>{
 
   ss(v: Properties) {
-    this.i.is && styleImg(this.i.is, v);
+    let { is, sz } = this.i;
+    styleImg(is, sz, v);
   }
   data() {
     return g('img', { src: this.ctx.img(this.i.bd) });
@@ -1500,7 +1515,7 @@ export type iBoxes<L = any> =
   iPH<L> |
   iHr<L> |
   iNP<L> |
-  iImg<L> |
+  iImgBox<L> |
   iGrid<L> |
   iGraphic<L> |
   iTr<L>;
@@ -1626,9 +1641,9 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
   return container;
 }
 function clear({ hd, bd, ft }: Book) {
-  hd?.$.clear();
+  hd?.$?.clear();
   (bd as iBoxes).$.clear();
-  ft?.$.clear();
+  ft?.$?.clear();
 }
 export function dblSheets(container: S, w: int) {
   let t = container.childs().remove();

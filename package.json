@@ -9,7 +9,8 @@
     "name": "Asriel Pires",
     "email": "bebether@gmail.com"
   },
-  "scripts": {
+  "type":"module",
+    "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean"
   },

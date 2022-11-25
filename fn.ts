@@ -1,5 +1,5 @@
-import { arr, assign, def, falses, int, isA, isN, isS, str, unk } from "galho/util.js";
-import { CLy, iBox, iBoxes, iCol, iHr, iP, iPH, iRow, iTb, iTr, RLy, Align, TbColInfo, TrLy, iImg, ASpan, iDiv, DivLy } from "./book.js";
+import { arr, assign, falses, isA, isN, isS, str, unk } from "galho/util.js";
+import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./book.js";
 
 /**
  * horizontal rule
@@ -25,7 +25,7 @@ export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]):
 export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr): iTb =>
   ({ tp: "tb", cols, hd, bd: arr(bd), ft });
 /**image */
-export const img = (bd: str, w: int, h: int): iImg => ({ tp: "img", bd, is: { w, h } });
+export const img = (bd: str, sz: ImgSize): IImg => ({ tp: "img", bd, sz });
 
 export const p = <L = any>(bd?: ASpan, style?: str | falses, al?: Align): iP<L> =>
   /*isS(bd) && !al && !style ? bd :*/({ s: style || void 0, is: al ? { al } : void 0, bd });
