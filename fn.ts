@@ -10,7 +10,7 @@ export const tr = (...bd: iBoxes<TrLy>[]): iTr<void> => ({ tp: "tr", bd })
 // /**table row with head */
 // export const th = (hd: iBoxes<void>, ...bd: iBoxes<TrLy>[]): iTr => ({ tp: "tr", hd, bd });
 /** row*/
-export const r = <L = unknown>(...bd: iBoxes<RLy>[]): iRow<L> => ({ tp: "row", bd });
+export const r = <L = unknown>(...bd: (iBoxes<RLy> | str)[]): iRow<L> => ({ tp: "row", bd:bd.map(v => isS(v) ? { bd: v } : v) });
 /** column*/
 export const c = <L = unknown>(...bd: (iBoxes<CLy> | str)[]): iCol<L> => ({ tp: "col", bd: bd.map(v => isS(v) ? { bd: v } : v) });
 /** column*/
@@ -39,8 +39,6 @@ export const cut = <L = any>(): iHr<L> => ({ tp: "hr", s: "cut" });
 
 export const sep = <L = any>(): iHr<L> => ({ tp: "hr", s: 'divider' });
 
-export const numbP = (bd: str, style?: str, fmt: '$' | 'n' | '%' = '$', al: Align = "e"): iP =>
-  ({ s: style || undefined, is: { al: al || undefined }, bd: `=fmt(${bd},${fmt})` });
 // export const dateP = (data: str): iP =>
 //   ({ bd: [{ tp: "e", bd: data, fmt: 'd;d' }] });
 

@@ -814,26 +814,26 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     if (map) {
       let
         dt = this.dt as MapContext,
-        range: Object[] = [], t = create(bd[0], this);
+        range: Object[] = [], bds = bd.map(i => create(i, this));
 
       dt.pd = { [pag]: range };
 
       if (l(dt))
         for (let i = 0; i < l(dt); i++) {
-          if (i) t.clearData();
           let row = dt[i];
-          if (row) row[$mapIndex] = i;
+          for (let t of bds) {
+            if (i) t.clearData();
+            if (row) row[$mapIndex] = i;
 
-          range.push(t._d = row);
-          t.id = i;
-          let newPag = t.view(pag);
-          t.parts = {};
-          if (newPag != pag) {
-            range.pop();
-            dt.pd[pag = newPag] = range = [row];
+            range.push(t._d = row);
+            t.id = i;
+            let newPag = t.view(pag);
+            t.parts = {};
+            if (newPag != pag) {
+              range.pop();
+              dt.pd[pag = newPag] = range = [row];
+            }
           }
-          //for (let j = 0; j < l; j++) 
-          //i++;
         }
       else if (empty)
         pag = write(empty, pag, DTParts.bd, this);
@@ -1125,9 +1125,7 @@ class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
 
     return pag;
   }
-  createPart(pag: int) {
-    return this.addBox(div(), pag);
-  }
+  createPart(pag: int) { return this.addBox(div(), pag) }
   append(ch: Box<RLy>, pag: int) {
     let part = this.parts[pag];
     if (!part) {
@@ -1161,7 +1159,6 @@ interface TableStyle extends BoxStyle {
   /**style for child in the footer */
   ft?: BoxStyle;
 
-
   col?: BoxStyle;
   /**first row */
   fr?: BoxStyle;
@@ -1187,7 +1184,6 @@ interface TbCellObj {
   sz?: float;
 }
 export type TbColInfo = TbCellObj | float;
-
 
 export type Ori = "h" | "v";
 export interface iTb<L = unk> extends iParentBase<L> {
@@ -1472,6 +1468,7 @@ class Hr<L = unk> extends SBox<L, iHr<L>>{
   ss(v: Properties) {
     let { o, s, is } = this.i;
     v.border = "none";
+    v.margin = 0;
     v[o == "v" ? "borderLeft" : "borderTop"] = border({ ...theme.hr[s], ...is });
   }
   data(pag: int) { return g('hr'); }
@@ -1611,8 +1608,10 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
         .addTo(container)
         .css({
           background: "#fff",
-          width: `${w}px`,
-          height: `${h}px`,
+          width: `${w}mm`,
+          //!GAMBIARRA
+          minHeight: !h && "300mm",
+          height: `${h}mm`,
           padding: space(pad),
           whiteSpace: 'pre-wrap',
           ...styleText(theme.text, {})
@@ -1665,15 +1664,15 @@ export function dblSheets(container: S, w: int) {
 
 type Sz = [w: int, h: int]
 export const medias = {
-  A4: <Sz>[210 * units.mm, 297 * units.mm],
-  A5: <Sz>[148 * units.mm, 210 * units.mm],
-  A3: <Sz>[297 * units.mm, 420 * units.mm],
+  A4: <Sz>[210, 297],
+  A5: <Sz>[148, 210],
+  A3: <Sz>[297, 420],
 }
-export type Media = keyof (typeof medias);
-export async function print(container: S, o: Ori, media: Media, cb: () => Task<void>) {
+export type PageSize = keyof (typeof medias);
+export async function print(container: S, size: str, cb: () => Task<void>) {
   let
     pags = container.childs().css({ display: "block" }, true).uncss(["padding"]),
-    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${media} ${(o == "h" ? 'landscape' : 'portrait')};margin:${space(theme.padding)}}`);
+    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${size};margin:${space(theme.padding)}}`);
 
   g(document.body).add(pags);
   style.addTo(document.head);
