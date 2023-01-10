@@ -1,12 +1,12 @@
 import { arr, assign, falses, isA, isN, isS, str, unk } from "galho/util.js";
-import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./book.js";
+import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
  * horizontal rule
  * @param s style
  */
 export const hr = <L = unk>(s?: str): iHr<L> => ({ tp: "hr", s });
-export const tr = (...bd: iBoxes<TrLy>[]): iTr<void> => ({ tp: "tr", bd })
+export const tr = (...bd: (iBoxes<TrLy> | str)[]): iTr<void> => ({ tp: "tr", bd:bd.map(v => isS(v) ? { bd: v } : v) })
 // /**table row with head */
 // export const th = (hd: iBoxes<void>, ...bd: iBoxes<TrLy>[]): iTr => ({ tp: "tr", hd, bd });
 /** row*/

@@ -375,6 +375,7 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       numbInFull,
       id() { return this.s.dt[$mapIndex]; },
       set(key: str, value) { return this.s.dt[key] = value },
+      get(src, field) { return src[field]; },
       //set and get data to temporary storage
       temp(k, v?) { return (this.s.ctx.temp ||= {})[k] = def(v, this.s.ctx.temp[k]) },
       delay(data: () => any) {
@@ -385,6 +386,7 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       pags() { return this.s.ctx.pagCount },
       pag() { return this.p; },
       fmt,
+      sum(v:any[],fn=v=>v){return v.reduce<int>((p,c)=>p+fn(c),0)},
       ...extraFn
       //exchange(currency: str) {
       //  if (!currency)
@@ -534,7 +536,7 @@ export const spans: Dic<Span> = {
       }
     }
     else return g('img', {
-      src: p.ctx.img(bd)
+      src: def(p.ctx.img?.(bd), bd)
     }).css(css);
   })
 };
@@ -1495,7 +1497,8 @@ class ImgBox<L = unk> extends SBox<L, iImgBox<L>>{
     styleImg(is, sz, v);
   }
   data() {
-    return g('img', { src: this.ctx.img(this.i.bd) });
+    let { ctx, i } = this;
+    return g('img', { src: def(ctx.img?.(i.bd), i.bd) });
   }
 }
 /* ************************************************************** */
@@ -1521,7 +1524,7 @@ export interface Book {
   bd: ABoxes;
   ft?: iBoxes<SideLayout>;
 
-  fill?: bool;
+  // fill?: bool;
   /**header size */
   hdSz?: int;
 
@@ -1586,7 +1589,7 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
   write(bparse(bk, "bd"), 1, DTParts.bd, {
     ctx,
     dt: ctx.dt,
-    fitIn: (css) => (bk.fill && (css.minHeight = `calc(100% - ${hs + fs}px)`)),
+    fitIn: (css) => css.minHeight = `calc(100% - ${hs + fs}px)`,//(bk.fill && ()),
     // assign(css, { marginTop: 0, marginBottom: 0 })
     overflow: (child, pag: int) =>
       Math.max(Math.floor(child.$.part(pag).e.offsetHeight) - height, OFTp.in),
