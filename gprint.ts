@@ -386,7 +386,7 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       pags() { return this.s.ctx.pagCount },
       pag() { return this.p; },
       fmt,
-      sum(v:any[],fn=v=>v){return v.reduce<int>((p,c)=>p+fn(c),0)},
+      sum(v: any[], fn = v => v) { return v.reduce<int>((p, c) => p + fn(c), 0) },
       ...extraFn
       //exchange(currency: str) {
       //  if (!currency)
@@ -527,13 +527,9 @@ export const spans: Dic<Span> = {
       let t = p.ctx.calc(bd, p, pag);
       if (isS(t))
         return g('img', { src: t }).css(css);
-      else {
-        t = g(<any>t);
-        if ((t as S).valid)
-          return (t as S).css(css)
-
-        return null;
-      }
+      else if (t = g(<any>t))
+        return (t as S).css(css)
+      return null;
     }
     else return g('img', {
       src: def(p.ctx.img?.(bd), bd)
