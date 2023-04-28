@@ -617,7 +617,7 @@ abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
   transport() { this.start++; }
   view(pag: int) {
     if (this.valid(pag)) {
-      this.css(this.e = this.data(pag));
+      this.css(this.e ||= this.data(pag));
 
       let { p, i } = this;
       p.append(this, pag);
@@ -683,7 +683,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
     let
       i = this.i,
       p = this.addBox(g(this.p.pTag || "p"), pag),
-      items: S[] = [i.li ? this.p.listItem(i) : null];
+      items = i.li ? [this.p.listItem(i)] : [];
 
     for (let j of span(i.bd)) {
       let data = spans[j.tp || 't'](j, this, pag);
@@ -1619,16 +1619,19 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
       if (bk.hd) {
         part = hd;
         write(bk.hd, pag, DTParts.h, p);
+        bk.hd.$.clear();
       }
 
       if (bk.ft) {
         part = ft;
         write(bk.ft, pag, DTParts.f, p);
+        bk.hd.$.clear();
       }
 
       if (bk.wm) {
         part = div("_ wm");
         write(bk.wm, pag, DTParts.b, p);
+        bk.hd.$.clear();
       }
       //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
     }
@@ -1670,14 +1673,14 @@ export const medias = {
 export type PageSize = keyof (typeof medias);
 export async function print(container: S, size: str, cb: () => Task<void>) {
   let
-    pags = container.childs().css({ display: "block" }, true).uncss(["padding"]),
-    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${size};margin:${space(theme.padding)}}`);
+    pags = container.childs().css({ display: "block" }, true),//.uncss(["padding"]),
+    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${size};margin:0}`);//${space(theme.padding)}
 
   g(document.body).add(pags);
   style.addTo(document.head);
   await cb();
   style.remove();
-  container.add(pags.css({ padding: space(theme.padding) }).uncss(["display"]));
+  container.add(pags.uncss(["display"]));//.css({ padding: space(theme.padding) })
 }
 
 interface WaterMark {
@@ -1734,9 +1737,8 @@ export const theme: Theme = {
     h4: {
       fs: 9 * units.pt,
     },
-    strong: {
-      b: true
-    },
+    strong: { b: true },
+    b: { b: true },
     white_strong: {
       b: true,
       cl: '#fff'
@@ -1806,11 +1808,8 @@ export const theme: Theme = {
         br: [null, null, {
           color: "#666"
         }, null],
-        pd: [1, 3],
       },
-      col: {
-        pd: [1, 3]
-      },
+      col: { pd: [3, 5] },
       ft: {
         tx: 'white_strong',
         bg: { dt: "#444" },
