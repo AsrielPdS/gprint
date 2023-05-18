@@ -562,7 +562,8 @@ abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
 
   /**@deprecated provavelmento so é util para o edit */
   start: int;
-  parts: NDic<S> = {};
+  /**@deprecated provavelmento so é util para o edit */
+  end: int;
   //id: int;
   _d: Dic;
   get dt() {
@@ -614,7 +615,7 @@ abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
   protected e: S;
   part() { return this.e; }
 
-  transport() { this.start++; }
+  transport() { this.start++; this.end++; }
   view(pag: int) {
     if (this.valid(pag)) {
       this.css(this.e ||= this.data(pag));
@@ -623,7 +624,11 @@ abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
       p.append(this, pag);
       p.overflow(i, pag) && p.append(this, ++pag);
     }
-    return this.start = pag;
+    return this.start = this.end = pag;
+  }
+  clearData() {
+    delete this.e;
+    super.clearData();
   }
   protected data?(pag: int): S;
 }
@@ -633,8 +638,7 @@ interface iMBox<L = unknown> extends iBox<L> {
   ub?: bool;
 }
 abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
-  /**@deprecated provavelmento so é util para o edit */
-  end: int;
+  parts: NDic<S> = {};
   view(pag: int) {
 
     this.start = this.end = pag;
@@ -649,6 +653,10 @@ abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
   transport() {
     let { parts: p, end: e } = this;
     this.parts = { [e + 1]: p[e] };
+  }
+  clearData() {
+    this.parts = {};
+    super.clearData();
   }
   part(pag: int) { return this.parts[pag]; }
   protected abstract data(pag: int): void;
@@ -826,7 +834,6 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
             range.push(t._d = row);
             t.id = i;
             let newPag = t.view(pag);
-            t.parts = {};
             if (newPag != pag) {
               range.pop();
               dt.pd[pag = newPag] = range = [row];
@@ -1431,8 +1438,11 @@ class PH<L = unk> extends MBox<L, iPH<L>> {
   }
   data(pag: int) {
     let t = write(this.bd, pag, this.id, this.p);
-    for (let part in this.bd.$.parts)
-      this.parts[part] = this.bd.$.parts[part];
+    let $ = this.bd.$;
+    for (let i = $.start; i <= $.end; i++)
+      this.parts[i] = $.part(i)// this.bd.$.parts[part];
+
+    // for (let part in .parts)
     return t;
   }
   transport() {
