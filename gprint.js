@@ -828,12 +828,12 @@ export function sheets(ctx, container, bk, w, h) {
             if (bk.ft) {
                 part = ft;
                 write(bk.ft, pag, -2, p);
-                bk.hd.$.clear();
+                bk.ft.$.clear();
             }
             if (bk.wm) {
                 part = div("_ wm");
                 write(bk.wm, pag, -4, p);
-                bk.hd.$.clear();
+                bk.wm.$.clear();
             }
         }
     });

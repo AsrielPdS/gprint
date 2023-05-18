@@ -1625,13 +1625,13 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
       if (bk.ft) {
         part = ft;
         write(bk.ft, pag, DTParts.f, p);
-        bk.hd.$.clear();
+        bk.ft.$.clear();
       }
 
       if (bk.wm) {
         part = div("_ wm");
         write(bk.wm, pag, DTParts.b, p);
-        bk.hd.$.clear();
+        bk.wm.$.clear();
       }
       //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
     }
