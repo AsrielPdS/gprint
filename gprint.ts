@@ -516,7 +516,7 @@ export const spans: Dic<Span> = {
     let v: any = p.ctx.calc(bd, p, pag);
     // fmt && (v = p.ctx.fmt(v, fmt));
     if (v || v === 0) {
-      let t = g('code', 0, v);
+      let t = g('span', 0, v);
       is && t.css(styleText(is, {}));
       return t;
     }
@@ -1757,7 +1757,7 @@ export const theme: Theme = {
       cl: '#fff'
     },
     min: {
-      fs: 6 * units.pt
+      fs: 7.5 * units.pt
     }
   },
   box: {
