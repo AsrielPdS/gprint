@@ -1,9 +1,11 @@
 import { Properties, div, empty, g, S } from "galho";
-import { arr, assign, bool, def, Dic, float, fmt, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
+import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
 import { numbInFull } from "./scalar.js";
 
 
-const hasProp = (obj: object) => Object.keys(obj).length;
+function hasProp(obj: object) {
+  return Object.keys(obj).length;
+}
 
 /**book item type */
 export type BT = "p" | "row" | "col" | "tr" | "th" | "block" | "ph" | "hr" | "table" | "tg" | "img" | "symbol" | "grid" | "custom" | "graphic" | "new";
@@ -379,13 +381,12 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       //set and get data to temporary storage
       temp(k, v?) { return (this.s.ctx.temp ||= {})[k] = def(v, this.s.ctx.temp[k]) },
       delay(data: () => any) {
-        let r = g('span').html(empty);
+        let r = g("span").html(empty);
         (this.s.ctx.wait ||= []).push(() => r.replace(data()));
         return r;
       },
       pags() { return this.s.ctx.pagCount },
       pag() { return this.p; },
-      fmt,
       sum(v: any[], fn = v => v) { return v.reduce<int>((p, c) => p + fn(c), 0) },
       ...extraFn
       //exchange(currency: str) {
@@ -640,7 +641,6 @@ interface iMBox<L = unknown> extends iBox<L> {
 abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
   parts: NDic<S> = {};
   view(pag: int) {
-
     this.start = this.end = pag;
     if (this.valid(pag))
       this.data(pag);
@@ -846,27 +846,23 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     } else for (let i = 0; i < l(bd); i++)
       pag = write(bd[i], pag, i, this);
 
-
-
     return pag;
   }
 
   append(ch: Box<CL>, pag: int) {
-    let
-      e = this.part(pag),
-      cpart = ch.part(pag);
+    let e = this.part(pag);
+    let cpart = ch.part(pag);
 
-    ch.id >= 0 && (this.i.ft as iBoxes)?.$.part(pag) ? e.place(-2, cpart) : e.add(cpart);
+    ch.id >= 0 && this.i.ft ? e.place(-2, cpart) : e.add(cpart);//(this.i.ft as iBoxes)?.$.part(pag)
   }
   part(pag: int) {
     let i = this.i, part = this.parts[pag];
-
     if (!part) {
       part = this.createPart(pag);
       this.p.append(this, pag);
-
-      bparse(i, "hd") && write(i.hd as iBoxes<CL>, pag, DTParts.h, this);
-      bparse(i, "ft") && write(i.ft as iBoxes<CL>, pag, DTParts.f, this);
+      let hd = bparse(i, "hd"), ft = bparse(i, "ft");
+      hd && (write(hd, pag, DTParts.h, this),hd.$.clearData());
+      ft && (write(ft, pag, DTParts.f, this),ft.$.clearData());
     }
     return part;
   }
@@ -1103,8 +1099,6 @@ class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
       css.maxHeight = ly.mm[1] + "%")
   }
 }
-
-
 
 export interface RLy extends FlexLy {
 
@@ -1349,8 +1343,6 @@ class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
 /* ************************************************************** */
 /* ****************************GRID****************************** */
 /* ************************************************************** */
-
-
 interface GridRowLayout {
   /**column span */
   cspan?: int;
@@ -1418,8 +1410,6 @@ class Graphic<L = unk> extends SBox<L, iGraphic<L>> {
   }
 }
 
-
-
 /* ************************************************************** */
 /* ****************************SYMBOL**************************** */
 /* ************************************************************** */
@@ -1459,11 +1449,9 @@ class PH<L = unk> extends MBox<L, iPH<L>> {
   }
 }
 
-
 /* ************************************************************** */
-/* ****************************HR**************************** */
+/* ****************************HR******************************** */
 /* ************************************************************** */
-
 interface HrStyle extends Border {
 
 }
@@ -1618,7 +1606,7 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
         .css({
           background: "#fff",
           width: `${w}mm`,
-          //!GAMBIARRA
+          // !GAMBIARRA
           minHeight: !h && "300mm",
           height: `${h}mm`,
           padding: space(pad),
@@ -1648,14 +1636,14 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
   });
   if (ctx.wait)
     for (let w of ctx.wait) w();
-  clear(bk);
+  (bk.bd as iBoxes).$.clear();
   return container;
 }
-function clear({ hd, bd, ft }: Book) {
-  hd?.$?.clear();
-  (bd as iBoxes).$.clear();
-  ft?.$?.clear();
-}
+// function clear({ hd, bd, ft }: Book) {
+//   hd?.$?.clear();
+//   (bd as iBoxes).$.clear();
+//   ft?.$?.clear();
+// }
 export function dblSheets(container: S, w: int) {
   let t = container.childs().remove();
   for (let i = 0; i < t.length; i += 2) {

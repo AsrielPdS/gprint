@@ -1,4 +1,4 @@
-import { arr, assign, falses, isA, isN, isS, str, unk } from "galho/util.js";
+import { arr, assign, falsy, isA, isN, isS, str, unk } from "galho/util.js";
 import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
@@ -27,7 +27,7 @@ export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr): iTb 
 /**image */
 export const img = (bd: str, sz: ImgSize): IImg => ({ tp: "img", bd, sz });
 
-export const p = <L = any>(bd?: ASpan, style?: str | falses, al?: Align): iP<L> =>
+export const p = <L = any>(bd?: ASpan, style?: str | falsy, al?: Align): iP<L> =>
   /*isS(bd) && !al && !style ? bd :*/({ s: style || void 0, is: al ? { al } : void 0, bd });
 /** @deprecated expression */
 export const e = <L = any>(bd?: str, fmt?: str | 0, style?: str, al?: Align): iP<L> =>

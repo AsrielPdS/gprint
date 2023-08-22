@@ -1,4 +1,4 @@
-import { Styles } from "galho";
+import type { Styles } from "galho";
 
 export const bookCss = (): Styles => ({
   // "._.sheet": {
