@@ -1,4 +1,4 @@
-import { arr, assign, falsy, isA, isN, isS, str, unk } from "galho/util.js";
+import { arr, assign, falsy, filter, isA, isN, isS, str, unk } from "galho/util.js";
 import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
@@ -20,7 +20,7 @@ export const ph = <L = any>(bd: str): iPH<L> => ({ tp: "ph", bd });
 /**table with head */
 export const tbh = <L = any>(cols: TbColInfo[], hd: iTr, ...bd: iTr[]): iTb<L> => ({ tp: "tb", cols, hd, bd });
 /**table */
-export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]): iTb<L> => ({ tp: "tb", cols, bd: bd.map(i => isA(i) ? tr(...i) : i) });
+export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]): iTb<L> => ({ tp: "tb", cols, bd: filter(bd).map(i => isA(i) ? tr(...i) : i) });
 /** full table(table with head, body and foot) */
 export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr): iTb =>
   ({ tp: "tb", cols, hd, bd: arr(bd), ft });

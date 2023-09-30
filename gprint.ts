@@ -1,4 +1,4 @@
-import { Properties, div, empty, g, S } from "galho";
+import { Properties, div, empty, g, G } from "galho";
 import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
 import { numbInFull } from "./scalar.js";
 
@@ -30,10 +30,10 @@ interface Scope {
   readonly ctx: Context;
 }
 export interface BoxParent<CL = unk> extends Scope {
-  fitIn?(css: Properties, ly: CL, e: S, id: int): void;
+  fitIn?(css: Properties, ly: CL, e: G, id: int): void;
   append(child: Box<CL>, pag: int): void;
   overflow(child: iBox<CL>, pag: int): OFTp;
-  listItem?(p: iP): S;
+  listItem?(p: iP): G;
   /**tag used for p element */
   pTag?: keyof HTMLElementTagNameMap
 }
@@ -360,7 +360,7 @@ function getCtx(exp: str, scp: Scope, pag: int) {
   } else return scp.dt;
 }
 interface CalcOpts {
-  funcs(name: str, args: any[]): any;
+  fn(name: str, args: any[]): any;
   vars(name: str, obj?: boolean): any;
 }
 // interface Settings {
@@ -400,9 +400,9 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
     };
 
   return (v: str, s: Scope, p?: int) => fn(v, {
-    funcs: (key, args) => key in funcs ? def(funcs[key].call({ p, s }, ...args), null) : void 0,
+    fn: (key, args) => key in funcs ? def(funcs[key].call({ p, s }, ...args), null) : void 0,
     vars(key, obj) {
-      if (key == "@") return s.dt;
+      if (key == "_") return s.dt;
       let t = s;
       do if (key in t.dt) return t.dt[key]; while (t = t.p);
 
@@ -466,7 +466,7 @@ interface IBookContext {
   readonly parent?: IBookContext;
   dt?: unk;
   ctx?: BoxRoot;
-  parts?: NDic<S>;
+  parts?: NDic<G>;
 }
 interface BoxRoot extends IBookContext {
   items: Dic;
@@ -505,7 +505,7 @@ export interface IImg {
   calc?: bool;
 }
 type iImgSpan = iSpan<ImgStyle> & IImg;
-type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => S
+type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => G
 
 export const spans: Dic<Span> = {
   t: <Span<iText>>(({ is, bd }) => {
@@ -529,7 +529,7 @@ export const spans: Dic<Span> = {
       if (isS(t))
         return g('img', { src: t }).css(css);
       else if (t = g(<any>t))
-        return (t as S).css(css)
+        return (t as G).css(css)
       return null;
     }
     else return g('img', {
@@ -585,7 +585,7 @@ abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
     this.ctx = (this.p = p).ctx
   }
 
-  css(e: S) {
+  css(e: G) {
     let css: Properties = {}, { p, id, i } = this;
     this.ss(css);
     p.fitIn?.(css, i.ly || {}, e, id);
@@ -602,7 +602,7 @@ abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
   }
 
   abstract transport(): void
-  abstract part(pag: int): S;
+  abstract part(pag: int): G;
   abstract view(pag: int): int;
   clear() { delete this.i.$; }
   clearData() { delete this._d; }
@@ -613,7 +613,7 @@ export type BoxT<L = unknown> = Box<L>;
 interface iSBox<L = unknown> extends iBox<L> {
 }
 abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
-  protected e: S;
+  protected e: G;
   part() { return this.e; }
 
   transport() { this.start++; this.end++; }
@@ -631,7 +631,7 @@ abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
     delete this.e;
     super.clearData();
   }
-  protected data?(pag: int): S;
+  protected data?(pag: int): G;
 }
 interface iMBox<L = unknown> extends iBox<L> {
   /**unbreakeble se false caso não sobre espaço para por toda linha põe o que chegar na proxima pagina
@@ -639,20 +639,21 @@ interface iMBox<L = unknown> extends iBox<L> {
   ub?: bool;
 }
 abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
-  parts: NDic<S> = {};
+  parts: NDic<G> = {};
   view(pag: int) {
     this.start = this.end = pag;
     if (this.valid(pag))
       this.data(pag);
     return this.end;
   }
-  addBox(s: S, pag: int) {
+  addBox(s: G, pag: int) {
     this.css(this.parts[this.end = pag] = s);
     return s;
   }
   transport() {
     let { parts: p, end: e } = this;
-    this.parts = { [e + 1]: p[e] };
+    // assign(p, { [e + 1]: p[e], [e]: void 0 });
+    this.parts = { [this.start = this.end = e + 1]: p[e] };
   }
   clearData() {
     this.parts = {};
@@ -710,7 +711,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
     this.p.append(this, pag);
     return this.check(p, pag);
   }
-  check(e: S, pag: int) {
+  check(e: G, pag: int) {
     let i = this.i, p = this.p, o: OFR, bd = span(i.bd);
 
     while (o = p.overflow(i, pag)) {
@@ -728,7 +729,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
           j = childs.length - 1;
 
         while (j >= 0) {
-          newE.prepend(childs[j]);
+          newE.badd(childs[j]);
           //usar aqui para que quando fazer o break diminua 
           j--;
           if (!p.overflow(i, pag))
@@ -754,7 +755,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
           } while (p.overflow(i, pag));
 
           newSpan.add(newSpanText.join(" "));
-          newE.prepend(newSpan);
+          newE.badd(newSpan);
           // }
         }
 
@@ -861,8 +862,8 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
       part = this.createPart(pag);
       this.p.append(this, pag);
       let hd = bparse(i, "hd"), ft = bparse(i, "ft");
-      hd && (write(hd, pag, DTParts.h, this),hd.$.clearData());
-      ft && (write(ft, pag, DTParts.f, this),ft.$.clearData());
+      hd && (write(hd, pag, DTParts.h, this), hd.$.clearData());
+      ft && (write(ft, pag, DTParts.f, this), ft.$.clearData());
     }
     return part;
   }
@@ -870,11 +871,11 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     let { hd, bd, ft } = this.i;
     super.transport();
 
-    (hd as iBoxes<CL>)?.$.transport();
-    (ft as iBoxes<CL>)?.$.transport();
+    (hd as iBoxes<CL>)?.$ && (hd as iBoxes<CL>).$.transport();
+    (ft as iBoxes<CL>)?.$ && (ft as iBoxes<CL>).$.transport();
 
     for (let i of bd)
-      i?.$.transport();
+      i.$ && i.$.transport();
   }
   overflow(child: iBox<CL>, pag: int) {
     let result = this.p.overflow(this.i, pag);
@@ -901,18 +902,18 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
   }
 
   private _lCss: Dic;
-  private _lItems: Array<{ s: S, p: iP }>;
+  private _lItems: Array<{ s: G, p: iP }>;
   listItem(p: iP) {
     throw "not implemented yet";
     let
       l = this.i.l,
       css = this._lCss || styleText(l, {}),
-      s = g('span', ['li'],/* $.scalar(p.li, l.fmt) */).css(css);
+      s = g('span', 'li',/* $.scalar(p.li, l.fmt) */).css(css);
     if (true) {
       let items = this._lItems || (this._lItems = []);
       items.push({ s: s, p: p });
       s
-        .props({ contentEditable: 'false', tabIndex: -1 })
+        .p({ contentEditable: 'false', tabIndex: -1 })
         .on({
           click(e) { e.stopPropagation(); },
           focus() {
@@ -925,9 +926,9 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     }
     return s;
   }
-  abstract fitIn(css: Properties, ly: CL, e: S, id: int): void;
+  abstract fitIn(css: Properties, ly: CL, e: G, id: int): void;
 
-  protected abstract createPart(index: int): S;
+  protected abstract createPart(index: int): G;
 
   clear() {
     let { hd, bd, ft } = this.i;
@@ -1277,7 +1278,7 @@ class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
     this.e.add(ch.part(pag));
   }
   get pTag(): keyof HTMLElementTagNameMap { return "td"; }
-  fitIn(css: Properties, ly: TrLy, e: S<HTMLTableCellElement>, id: int) {
+  fitIn(css: Properties, ly: TrLy, e: G<HTMLTableCellElement>, id: int) {
     let
       { i: { bd }, p } = this,
       cols = p.i.cols;
@@ -1383,7 +1384,7 @@ class GridBox<L = unk> extends Parent<L, GridLy, iGrid<L>> {
     v.gridTemplate = tpt;
   }
   createPart(pag: int) {
-    return this.addBox(div(0, [div(), div(), div()]), pag);
+    return this.addBox(div([div(), div(), div()]), pag);
   }
   fitIn(css: Properties, ly: GridLy) {
     return {
@@ -1541,7 +1542,7 @@ export function render(bd: sbInput) {
     return g("p", 0, bd);
 
   let
-    r = S.empty,
+    r = G.empty,
     p: BoxParent = {
       ctx: {
         // fmt(this: any, value: unk, exp: str) {
@@ -1575,7 +1576,7 @@ export const sheet = (bd: sbInput, w: int) => g('article', "_ sheet", render(bd)
 
 //  return [div, bd];
 //}
-export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
+export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: int, h: int) {
   let
     height: int,
     hs = bk.hdSz || theme.hdSize,
@@ -1593,7 +1594,7 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
         pad = theme.padding,
         hd = g('header').css("height", `${hs}px`),
         ft = g('footer').css("height", `${fs}px`),
-        part: S,
+        part: G,
         p: BoxParent = {
           ctx,
           dt: ctx.dt,
@@ -1602,7 +1603,7 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
         };
 
       height = g("article", "_ sheet", [hd, ch.part(pag), ft])
-        .addTo(container)
+        .addTo(container(pag))
         .css({
           background: "#fff",
           width: `${w}mm`,
@@ -1644,10 +1645,10 @@ export function sheets(ctx: Context, container: S, bk: Book, w: int, h: int) {
 //   (bd as iBoxes).$.clear();
 //   ft?.$?.clear();
 // }
-export function dblSheets(container: S, w: int) {
+export function dblSheets(container: G, w: int) {
   let t = container.childs().remove();
   for (let i = 0; i < t.length; i += 2) {
-    let t2 = <(HTMLElement | S)[]>t.slice(i, i + 2);
+    let t2 = <(HTMLElement | G)[]>t.slice(i, i + 2);
     t2.splice(1, 0, g('hr').css({
       borderLeft: '1px dashed #AAA',
       margin: 0
@@ -1669,16 +1670,15 @@ export const medias = {
   A3: <Sz>[297, 420],
 }
 export type PageSize = keyof (typeof medias);
-export async function print(container: S, size: str, cb: () => Task<void>) {
-  let
-    pags = container.childs().css({ display: "block" }, true),//.uncss(["padding"]),
-    style = g('style', null, `body{background:#fff!important}body>*{display:none!important}@page{size:${size};margin:0}`);//${space(theme.padding)}
+export async function print(container: G, size: str, cb: () => Task<void>) {
+  let pags = container.childs()//.css({ display: "block" }, true);.uncss(["padding"]),
+  let style = g('style', null, `body{background:#fff!important}body>:not(._.sheet){display:none!important}@page{size:${size};margin:0}`);//${space(theme.padding)}
 
   g(document.body).add(pags);
   style.addTo(document.head);
   await cb();
   style.remove();
-  container.add(pags.uncss(["display"]));//.css({ padding: space(theme.padding) })
+  container.add(pags);//.uncss(["display"])//.css({ padding: space(theme.padding) })
 }
 
 interface WaterMark {
@@ -1723,17 +1723,17 @@ export const theme: Theme = {
   },
   p: {
     h1: {
-      fs: 11 * units.pt,
+      fs: 12 * units.pt,
       b: true
     },
     h2: {
-      fs: 10 * units.pt,
+      fs: 11 * units.pt,
     },
     h3: {
-      fs: 9 * units.pt,
+      fs: 10 * units.pt,
     },
     h4: {
-      fs: 9 * units.pt,
+      fs: 9.5 * units.pt,
     },
     strong: { b: true },
     b: { b: true },
