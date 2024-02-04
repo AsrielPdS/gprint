@@ -12,6 +12,6 @@
   },
   "type": "module",
   "dependencies": {
-    "galho": ""
+    "galho": "file:../galho"
   }
 }

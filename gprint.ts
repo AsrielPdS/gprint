@@ -1,5 +1,5 @@
 import { Properties, div, empty, g, G } from "galho";
-import { arr, assign, bool, def, Dic, float, int, isA, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
+import { arr, assign, bool, def, Dic, float, int, isA, isF, isN, isS, Key, l, Obj, str, Task, unk } from "galho/util.js";
 import { numbInFull } from "./scalar.js";
 
 
@@ -35,7 +35,7 @@ export interface BoxParent<CL = unk> extends Scope {
   overflow(child: iBox<CL>, pag: int): OFTp;
   listItem?(p: iP): G;
   /**tag used for p element */
-  pTag?: keyof HTMLElementTagNameMap
+  childTag?: keyof HTMLElementTagNameMap
 }
 
 //#region util
@@ -110,6 +110,7 @@ export interface SpanStyle {
   cl?: str;
   /**background */
   bg?: str;
+  nowrap?: bool
 }
 interface Shadow {
   inset?: boolean;
@@ -171,8 +172,8 @@ export interface PStyle {
   lh?: int;
   /**align */
   al?: Align;
-  noWrap?: boolean
-  overflow?: 'ellipsis' | 'clip';
+  // noWrap?: boolean
+  // overflow?: 'ellipsis' | 'clip';
 }
 export type TextStyle = PStyle & SpanStyle;
 
@@ -279,10 +280,10 @@ function styleParagraph(style: PStyle, css: Properties) {
     css.lineHeight = style.lh;
 
   style.al && (css.textAlign = align(style.al))
-  if (style.noWrap) {
-    css.whiteSpace = 'nowrap';
-    css.textOverflow = style.overflow;
-  }
+  // if (style.noWrap) {
+  //   css.whiteSpace = 'nowrap';
+  //   css.textOverflow = style.overflow;
+  // }
   return css;
 }
 //existe 6 styles do tipo header
@@ -292,33 +293,24 @@ function styleParagraph(style: PStyle, css: Properties) {
 //table cell não tem inline style tambem e so podem ser de um paragraph style
 //estilos do documentos (assign:border,padding,round,filter) tambem ficam nos styles globas mas tambem podem estar inlines
 function styleText(style: SpanStyle, css: Properties) {
-  if (style.ff)
-    css.fontFamily = style.ff;
-
-  if (style.fs)
-    css.fontSize = `${style.fs}px`;
-
-  if ('b' in style)
-    css.fontWeight = style.b ? 'bold' : 'normal';
-
-  if ('i' in style)
-    css.fontStyle = style.i ? 'italic' : 'normal';
-
-  if (style.u)
-    css.textDecorationLine = 'underline';
-
-  if (style.st)
-    css.textDecorationLine = (css.textDecorationLine || '') + ' line-through';
-
-  if (style.va)
-    css.verticalAlign = style.va;
-
-  if (style.cl)
-    css.color = style.cl;
-
-  if (style.bg)
-    css.background = style.bg;
-
+  for (let k in style) {
+    let v = style[k];
+    switch (k as keyof SpanStyle) {
+      case "cl": css.color = v; break;
+      case "bg": css.background = v; break;
+      case "ff": css.fontFamily = v; break;
+      case "fs": css.fontSize = `${v}px`; break;
+      case "b": css.fontWeight = v ? 'bold' : 'normal'; break;
+      case "i": css.fontStyle = v ? 'italic' : 'normal'; break;
+      case "va": css.verticalAlign = v; break;
+      case "u": css.textDecorationLine = v ? 'underline' : 'none'; break;
+      case "st": css.textDecorationLine = (css.textDecorationLine || '') + ' line-through'; break;
+      case "nowrap": css.whiteSpace = v ? "nowrap" : "normal"; break;
+      case "sub": break;
+      case "sup": break;
+      case "transform": break;
+    }
+  }
   return css;
 }
 
@@ -481,20 +473,20 @@ interface BoxRoot extends IBookContext {
 export interface iSpan<S = any> {
   tp?: ST;
 
-  /**data */
-  bd?: str;
   /**style */
   is?: S;
 }
 export interface iText extends iSpan<SpanStyle> {
   tp?: "t";
+  /**data */
+  bd?: str;
 }
 interface iExp extends iSpan<SpanStyle> {
   tp: "e";
   /**input type */
   it?: str;
-  // /**format */
-  // fmt?: str;
+  /**data */
+  bd?: str | SpanExp;
 }
 export type ImgSize = float | [w: float, h: float] | 'w' | 'h';
 export interface IImg {
@@ -514,7 +506,7 @@ export const spans: Dic<Span> = {
     return bd ? t.text(bd) : t.html(empty);
   }),
   e: <Span<iExp>>(({ bd, is }, p, pag) => {
-    let v: any = p.ctx.calc(bd, p, pag);
+    let v: any = isS(bd) ? p.ctx.calc(bd, p, pag) : bd(p.dt, p, pag);
     // fmt && (v = p.ctx.fmt(v, fmt));
     if (v || v === 0) {
       let t = g('span', 0, v);
@@ -613,7 +605,7 @@ export type BoxT<L = unknown> = Box<L>;
 interface iSBox<L = unknown> extends iBox<L> {
 }
 abstract class SBox<L = unk, T extends iSBox<L> = any> extends Box<L, T>{
-  protected e: G;
+  e: G;
   part() { return this.e; }
 
   transport() { this.start++; this.end++; }
@@ -662,9 +654,18 @@ abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T>{
   part(pag: int) { return this.parts[pag]; }
   protected abstract data(pag: int): void;
 }
-export type ASpan = (iSpans | str)[] | str | iSpans;
+type SpanExp = (ctx: any, p: P, pag: int) => str | G
+export type ASpan = (iSpans | str | SpanExp)[] | str | iSpans | SpanExp;
 // box[0] == '=' ? [{ tp: "e", bd: box.slice(1) }] : 
-export const span = (v: ASpan) => v ? arr(v).map(v => isS(v) ? v[0] == '=' ? <iExp>{ tp: "e", bd: v.slice(1) } : { bd: v } : v) : [];
+export const span = (v: ASpan) => v ? arr(v).map<iSpans>(v =>
+  isS(v) ?
+    v[0] == '=' ?
+      { tp: "e", bd: v.slice(1) } :
+      { bd: v } :
+    isF(v) ?
+      { tp: "e", bd: v } :
+      v
+) : [];
 export interface iP<L = unk> extends iMBox<L> {
   tp?: "p",
   $?: P<L>,
@@ -691,7 +692,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
   data(pag: int) {
     let
       i = this.i,
-      p = this.addBox(g(this.p.pTag || "p"), pag),
+      p = this.addBox(g(this.p.childTag || "p"), pag),
       items = i.li ? [this.p.listItem(i)] : [];
 
     for (let j of span(i.bd)) {
@@ -699,7 +700,7 @@ class P<L = unk> extends MBox<L, iP<L>> {
 
       if (data) {
         //if (this.edit)
-        //  data.prop('$', dtModel);
+        //  data.p('$', dtModel);
         items.push(data);
       }
     }
@@ -1065,7 +1066,7 @@ class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
     super.ss(v);
     assign(v, <Properties>{
       display: "flex",
-      flexDirection: "column"
+      flexDirection: "column",
     });
     var i = this.i;
     if (i.btt)
@@ -1073,19 +1074,19 @@ class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
     if (i.align)
       switch (i.align) {
         case 'e':
-          v.justifyContent = 'flex-end';
+          v.alignItems = 'flex-end';
           break;
 
         case "s":
-          v.justifyContent = 'flex-start';
+          v.alignItems = 'flex-start';
           break;
 
         case "c":
-          v.justifyContent = 'center';
+          v.alignItems = 'center';
           break;
 
         default:
-          v.justifyContent = i.align;
+          v.alignItems = i.align||"start";
           break;
       }
   }
@@ -1115,7 +1116,8 @@ class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
     super.ss(css);
     assign(css, <Properties>{
       display: "flex",
-      flexDirection: "row"
+      flexDirection: "row",
+      alignItems: "start"
     });
   }
   data(pag: int) {
@@ -1277,7 +1279,7 @@ class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
   append(ch: Box<TrLy>, pag: int) {
     this.e.add(ch.part(pag));
   }
-  get pTag(): keyof HTMLElementTagNameMap { return "td"; }
+  get childTag(): keyof HTMLElementTagNameMap { return "td"; }
   fitIn(css: Properties, ly: TrLy, e: G<HTMLTableCellElement>, id: int) {
     let
       { i: { bd }, p } = this,
@@ -1468,7 +1470,7 @@ class Hr<L = unk> extends SBox<L, iHr<L>>{
     v.margin = 0;
     v[o == "v" ? "borderLeft" : "borderTop"] = border({ ...theme.hr[s], ...is });
   }
-  data(pag: int) { return g('hr'); }
+  data(pag: int) { return g(this.p.childTag || 'hr'); }
 }
 
 interface iNP<L = unk> extends iBox<L> { tp: "np"; }
@@ -1484,9 +1486,12 @@ class NP<L = unk> extends SBox<L, iNP<L>>{
   }
 }
 
-export type iImgBox<T = unk> = iBox<T> & IImg & { is?: ImgStyle };
+export type iImgBox<L = unk> = iBox<L> & IImg & {
+  is?: ImgStyle
+  $?: ImgBox<L>,
+};
 class ImgBox<L = unk> extends SBox<L, iImgBox<L>>{
-
+  declare e: G<HTMLImageElement>;
   ss(v: Properties) {
     let { is, sz } = this.i;
     styleImg(is, sz, v);
@@ -1530,61 +1535,80 @@ export interface Book {
   wm?: iP<WMLayout>;
 }
 /** */
-interface WMLayout {
+export interface WMLayout {
   tp?;
 }
 
 export type sbInput<L = void> = str | ABoxes<L>;
-export function render(bd: sbInput) {
+export function render(bd: sbInput, ctx: Context = {}) {
   if (!bd)
     return null;
   if (isS(bd))
     return g("p", 0, bd);
-
-  let
-    r = G.empty,
-    p: BoxParent = {
-      ctx: {
-        // fmt(this: any, value: unk, exp: str) {
-        //   return $.fmt(value, exp, {
-        //     currency: (<any>this.dt).currency,
-        //     currencySymbol: (<any>this.dt).currencySymbol || false,
-        //     //refCurr:
-        //   });
-        // }, 
-        pagCount: 1
-        //calc(value: Expression, ctx: IBookContext, index?: int) {
-        //  return getValue(value, ctx, index);
-        //},
-        //img() { return ''; }
-      },
-      overflow: () => OFTp.in,
-
-      append: (child: Box) => r = child.part(0)
-    };
-  write(bparse({ bd }, "bd"), 0, 0, p);
+  let r = G.empty;
+  write(bparse({ bd }, "bd"), 0, 0, {
+    ctx, overflow: () => OFTp.in,
+    append: (child: Box) => r = child.part(0)
+  });
   return r;
 }
 
-export const sheet = (bd: sbInput, w: int) => g('article', "_ sheet", render(bd)).css({
-  width: `${w}px`,
-  marginTop: `40px`,
-  padding: space([0, 6]),
-  ...styleText(theme.text, {})
-});
+export function sheet(ctx: Context, container: (pag: int) => G, bk: Book, w: int) {
+  write(bparse(bk, "bd"), 1, DTParts.bd, {
+    ctx,
+    dt: ctx.dt,
+    overflow: () => OFTp.in,
+    append(ch, pag) {
+      ctx.pagCount = pag;
+      let pad = theme.padding, part: G;
+      let p: BoxParent = {
+        ctx,
+        dt: ctx.dt,
+        overflow: () => OFTp.in,
+        append(ch) { part.add(ch.part(pag)); }
+      };
+      let _ = g("article", "_ sheet", [ch.part(pag)])
+        .addTo(container(pag))
+        .css({
+          background: "#fff",
+          width: `${w}mm`,
+          padding: space(pad),
+          whiteSpace: 'pre-wrap',
+          position: "relative",
+          ...styleText(theme.text, {})
+        });
+
+      if (bk.wm) {
+        part = div("_ wm center").css({
+          fontSize: "4em",
+          fontWeight: "bold",
+          rotate: "45deg",
+          opacity: .5,
+          userSelect: "none",
+        }).addTo(_);
+        write(bk.wm, pag, DTParts.b, p);
+        bk.wm.$.clear();
+      }
+      //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
+    }
+  });
+  if (ctx.wait)
+    for (let w of ctx.wait) w();
+  (bk.bd as iBoxes).$.clear();
+  return container;
+}
 //function pag(ctx: Context, bk: Book, w: int, h: int, index: int) {
 
 //  return [div, bd];
 //}
 export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: int, h: int) {
-  let
-    height: int,
-    hs = bk.hdSz || theme.hdSize,
-    fs = bk.ftSz || theme.ftSize;
+  let height: int;
+  let hs = bk.hdSz || theme.hdSize;
+  let fs = bk.ftSz || theme.ftSize;
   write(bparse(bk, "bd"), 1, DTParts.bd, {
     ctx,
     dt: ctx.dt,
-    fitIn: (css) => css.minHeight = `calc(100% - ${hs + fs}px)`,//(bk.fill && ()),
+    fitIn: css => css.minHeight = `calc(100% - ${hs + fs}px)`,//(bk.fill && ()),
     // assign(css, { marginTop: 0, marginBottom: 0 })
     overflow: (child, pag: int) =>
       Math.max(Math.floor(child.$.part(pag).e.offsetHeight) - height, OFTp.in),
@@ -1601,17 +1625,18 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
           overflow: () => OFTp.in,
           append(ch) { part.add(ch.part(pag)); }
         };
-
-      height = g("article", "_ sheet", [hd, ch.part(pag), ft])
+      let _ = g("article", "_ sheet", [hd, ch.part(pag), ft]);
+      height = _
         .addTo(container(pag))
         .css({
           background: "#fff",
           width: `${w}mm`,
           // !GAMBIARRA
-          minHeight: !h && "300mm",
-          height: `${h}mm`,
+          // minHeight: !h && "300mm",
+          height: h ? `${h}mm` : null,
           padding: space(pad),
           whiteSpace: 'pre-wrap',
+          position: "relative",
           ...styleText(theme.text, {})
         }).e.clientHeight - (hs + fs + pad[0] * 2);
 
@@ -1628,7 +1653,13 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
       }
 
       if (bk.wm) {
-        part = div("_ wm");
+        part = div("_ wm center").css({
+          fontSize: "7em",
+          fontWeight: "bold",
+          rotate: "45deg",
+          opacity: .5,
+          userSelect: "none"
+        }).addTo(_);
         write(bk.wm, pag, DTParts.b, p);
         bk.wm.$.clear();
       }
@@ -1662,8 +1693,7 @@ export function dblSheets(container: G, w: int) {
   return container;
 }
 
-
-type Sz = [w: int, h: int]
+export type Sz = [w: int, h: int]
 export const medias = {
   A4: <Sz>[210, 297],
   A5: <Sz>[148, 210],

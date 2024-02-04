@@ -27,9 +27,10 @@ export const bookCss = (): Styles => ({
   // },
   "@media screen": {
     "._.sheet": {
-      margin: "0 auto",
+      margin: "2.3mm auto",
       boxShadow: "0 0.5mm 2mm #585858",
-      marginBottom: "6px",
+      overflow: "hidden",
+      background: "#fff",
     }
   },
   // "@media print": {

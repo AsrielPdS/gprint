@@ -1,4 +1,4 @@
-import { arr, assign, falsy, filter, isA, isN, isS, str, unk } from "galho/util.js";
+import { arr, assign, bool, falsy, filter, isA, isN, isS, str, unk } from "galho/util.js";
 import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
@@ -6,11 +6,11 @@ import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize,
  * @param s style
  */
 export const hr = <L = unk>(s?: str): iHr<L> => ({ tp: "hr", s });
-export const tr = (...bd: (iBoxes<TrLy> | str)[]): iTr<void> => ({ tp: "tr", bd:bd.map(v => isS(v) ? { bd: v } : v) })
+export const tr = (...bd: (iBoxes<TrLy> | str)[]): iTr<void> => ({ tp: "tr", bd: bd.map(v => isS(v) ? { bd: v } : v) })
 // /**table row with head */
 // export const th = (hd: iBoxes<void>, ...bd: iBoxes<TrLy>[]): iTr => ({ tp: "tr", hd, bd });
 /** row*/
-export const r = <L = unknown>(...bd: (iBoxes<RLy> | str)[]): iRow<L> => ({ tp: "row", bd:bd.map(v => isS(v) ? { bd: v } : v) });
+export const r = <L = unknown>(...bd: (iBoxes<RLy> | str)[]): iRow<L> => ({ tp: "row", bd: bd.map(v => isS(v) ? { bd: v } : v) });
 /** column*/
 export const c = <L = unknown>(...bd: (iBoxes<CLy> | str)[]): iCol<L> => ({ tp: "col", bd: bd.map(v => isS(v) ? { bd: v } : v) });
 /** column*/
@@ -22,10 +22,10 @@ export const tbh = <L = any>(cols: TbColInfo[], hd: iTr, ...bd: iTr[]): iTb<L> =
 /**table */
 export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]): iTb<L> => ({ tp: "tb", cols, bd: filter(bd).map(i => isA(i) ? tr(...i) : i) });
 /** full table(table with head, body and foot) */
-export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr): iTb =>
-  ({ tp: "tb", cols, hd, bd: arr(bd), ft });
+export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr, empty?: iTr, sc?: str, map?: bool): iTb =>
+  ({ tp: "tb", cols, hd, bd: arr(bd), ft, empty, sc, map });
 /**image */
-export const img = (bd: str, sz: ImgSize): IImg => ({ tp: "img", bd, sz });
+export const img = <L = any>(bd: str, sz: ImgSize): IImg => ({ tp: "img", bd, sz });
 
 export const p = <L = any>(bd?: ASpan, style?: str | falsy, al?: Align): iP<L> =>
   /*isS(bd) && !al && !style ? bd :*/({ s: style || void 0, is: al ? { al } : void 0, bd });
