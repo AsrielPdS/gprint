@@ -1,5 +1,5 @@
 import { arr, assign, bool, falsy, filter, isA, isN, isS, str, unk } from "galho/util.js";
-import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
+import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, iImgBox, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
  * horizontal rule
@@ -25,7 +25,7 @@ export const tb = <L = any>(cols: TbColInfo[], ...bd: (iTr | iBoxes<TrLy>[])[]):
 export const tbf = (cols: TbColInfo[], hd: iTr, bd: iTr | iTr[], ft?: iTr, empty?: iTr, sc?: str, map?: bool): iTb =>
   ({ tp: "tb", cols, hd, bd: arr(bd), ft, empty, sc, map });
 /**image */
-export const img = <L = any>(bd: str, sz: ImgSize): IImg => ({ tp: "img", bd, sz });
+export const img = <L = any>(bd: str, sz: ImgSize, al?: iImgBox["al"]): IImg => <any>({ tp: "img", bd, sz, al });
 
 export const p = <L = any>(bd?: ASpan, style?: str | falsy, al?: Align): iP<L> =>
   /*isS(bd) && !al && !style ? bd :*/({ s: style || void 0, is: al ? { al } : void 0, bd });
