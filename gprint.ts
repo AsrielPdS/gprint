@@ -1,5 +1,6 @@
-import { G, Properties, div, empty, g } from "galho";
-import { Dic, Key, Obj, Task, arr, assign, bool, def, float, int, isA, isF, isN, isO, isS, l, str, unk } from "galho/util.js";
+import { G, type Properties, div, empty, g } from "galho";
+import type { Dic, Key, Obj, Task, bool, float, int, str, unk } from "galho/util.js";
+import { arr, assign, def, isA, isF, isN, isO, isS, l } from "galho/util.js";
 import { numbInFull } from "./scalar.js";
 
 

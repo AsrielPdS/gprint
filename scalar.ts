@@ -1,4 +1,4 @@
-import { int, str } from "galho/util.js";
+import type { int, str } from "galho/util.js";
 
 export const inFull: InFullUnit[] = [
   { v: 0, exp: () => 'zero' },

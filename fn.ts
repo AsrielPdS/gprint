@@ -1,5 +1,6 @@
-import { arr, assign, bool, falsy, filter, isA, isN, isS, str, unk } from "galho/util.js";
-import { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, iImgBox, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
+import type { bool, falsy, str, unk } from "galho/util.js";
+import { arr, assign, filter, isA, isN, isS } from "galho/util.js";
+import type { Align, ASpan, CLy, DivLy, iBox, iBoxes, iCol, iDiv, iHr, IImg, iImgBox, ImgSize, iP, iPH, iRow, iTb, iTr, RLy, TbColInfo, TrLy } from "./gprint.js";
 
 /**
  * horizontal rule

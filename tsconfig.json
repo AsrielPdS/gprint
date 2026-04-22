@@ -8,10 +8,12 @@
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "module": "esnext",
-    "moduleResolution": "Node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "noImplicitThis": true,
-    "esModuleInterop": true
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "strict": false
   },
   "exclude": [
     "node_modules"

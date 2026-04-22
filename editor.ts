@@ -1,7 +1,7 @@
 import { Component, G, div } from "galho";
 import { anim } from "../galhui/util.js";
 import { moveondoc, topLayer } from "galhui";
-import { float } from "galho/util.js";
+import { type float } from "galho/util.js";
 
 // interface iImgResizer{
 // }
