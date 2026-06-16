@@ -3,12 +3,14 @@ import { anim } from "../galhui/util.js";
 import { moveondoc, topLayer } from "galhui";
 import { type float } from "galho/util.js";
 
-// interface iImgResizer{
-// }
-// export class ImgResizer extends Component<iImgResizer>{
-//   view(){
-//   }
-// }
+/**
+ * Enables image resizing capabilities on a target HTMLImageElement.
+ * Creates overlay controls on hover and handles resize dragging.
+ * 
+ * @param target - The target image element wrapper to make resizable.
+ * @param min - The minimum allowed width for the image in pixels.
+ * @param callback - Callback triggered after resize operations (currently unused).
+ */
 export function imgResizer(target: G<HTMLImageElement>, min: float, callback: () => void) {
   let tool: G, rm = () => { tool.remove(); tool = null; };
   target.on({
@@ -26,7 +28,6 @@ export function imgResizer(target: G<HTMLImageElement>, min: float, callback: ()
               console.log(Math.max(min, e.clientX - rect.x) + "px")
               target.css({
                 width: Math.max(min, e.clientX - rect.x) + "px",
-                // height: ""
               })
             })
           }

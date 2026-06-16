@@ -1,30 +1,10 @@
 import type { Styles } from "galho";
 
+/**
+ * Returns the default CSS styles for sheets in screen media.
+ * @returns CSS styles structure for sheet components.
+ */
 export const bookCss = (): Styles => ({
-  // "._.sheet": {
-  //   overflow: "hidden",
-  //   position: "relative",
-  //   breakInside: "avoid",
-  //   cursor: "text",
-  //   whiteSpace: "pre-wrap",
-  //   background: "#fff",
-  //   color: "#000",
-  //   userSelect: "text",
-  //   ":not(:first-child)": { breakBefore: "page" },
-  // },
-  // "._.wm": {
-  //   userSelect: "none",
-  //   position: "absolute",
-  //   fontSize: "120pt",
-  //   margin: "auto",
-  //   transform: "translate(-50%, -50%)rotate(-45deg)",
-  //   top: "50%",
-  //   left: "50%",
-  //   whiteSpace: "nowrap",
-  //   opacity: 0.3,
-  //   "&.v": { transform: "translate(-50%, -50%)rotate(-65deg)" },
-  //   "&.h": { transform: "translate(-50%, -50%)rotate(-30deg)" },
-  // },
   "@media screen": {
     "._.sheet": {
       margin: "2.3mm auto",
@@ -33,9 +13,4 @@ export const bookCss = (): Styles => ({
       background: "#fff",
     }
   },
-  // "@media print": {
-  //   ":not(._.sheet)": {
-  //     display: "none"
-  //   },
-  // }
 });

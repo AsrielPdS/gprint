@@ -1,5 +1,8 @@
 import type { int, str } from "galho/util.js";
 
+/**
+ * List of unit rules for formatting numbers in Portuguese text.
+ */
 export const inFull: InFullUnit[] = [
   { v: 0, exp: () => 'zero' },
 
@@ -97,6 +100,14 @@ export const inFull: InFullUnit[] = [
     }
   },
 ];
+
+/**
+ * Formats a given number into its word representation in Portuguese.
+ * 
+ * @param value - The number to convert to words.
+ * @param opts - Configurations for gender, units, and decimal units representation.
+ * @returns The number formatted in full uppercase Portuguese words.
+ */
 export function numbInFull (value: number, opts: Partial<InFullOptions>) {
 
   let
@@ -130,42 +141,45 @@ export function numbInFull (value: number, opts: Partial<InFullOptions>) {
   }
 
   return t.toUpperCase();
-  //let r = '';
-  //{
-  //  let t0 = vals[i];
-  //  if (t0.v <= value) {
-  //    let parts = [t0], t1 = Math.floor(value / t0.v);
-  //    for (let j = i - 1; j > 0 && t1 != 1; j--) {
-  //      t0 = vals[j];
-  //      if (t0.v <= t1) {
-  //        t1 = Math.floor(value / t0.v);
-
-  //      }
-  //    }
-  //  }
-  //}
-  //return r;
 }
+
+/**
+ * Transforms an integer value into a specific alphanumeric sequence format.
+ * 
+ * @param value - The integer value to transform.
+ * @param format - The target layout format option ('i', 'I', 'a', 'A').
+ */
 export function transform(value: int, format: "i" | "I" | "a" | "A") {
 
 }
+
+/**
+ * Options configuration for number to word formatting representation.
+ */
 export interface InFullOptions {
-  /**gender */
+  /** Gender: feminine ('f') or masculine ('m') */
   g: 'f' | 'm',
-  /**next */
+  /** Next value indicator */
   n?: str
   
+  /** Callback to evaluate next level units */
   c(value: number, opts: InFullOptions, i?: number): str;
-  /**single unit */
+  /** Single unit representation string */
   s?: str;
-  /**single unit */
+  /** Plural unit representation string */
   p?: str;
-  /**decimal single unit*/
+  /** Decimal single unit representation string */
   ds?: str;
-  /**decimal plural unit*/
+  /** Decimal plural unit representation string */
   dp?: str;
 }
+
+/**
+ * Represents a single numeric value scale/range mapping and its expression rules.
+ */
 export interface InFullUnit {
+  /** The value marker for the unit scale range */
   v: number,
+  /** Expression function resolver */
   exp(value?: number, opts?: InFullOptions, i?: number): str;
 }
