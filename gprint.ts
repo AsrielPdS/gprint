@@ -8,14 +8,16 @@ function hasProp(obj: object) {
   return Object.keys(obj).length;
 }
 
-/**book item type */
+/** Book item type representing the layout tag name or box role. */
 export type BT = "p" | "row" | "col" | "tr" | "th" | "block" | "ph" | "hr" | "table" | "tg" | "img" | "symbol" | "grid" | "custom" | "graphic" | "new";
 
-/**book span type */
+/** Book inline span type representing text, expressions, or images. */
 export type ST = "t" | "e" | "img";
-/* ************************************************************** */
-/* *********************MAIN INTERFACE*************************** */
-/* ************************************************************** */
+
+/**
+ * Interface representing the global formatting and evaluation context
+ * for rendering/printing a document.
+ */
 export interface Context {
   dt?: unk;
   temp?: Dic<unk>;
@@ -31,12 +33,19 @@ interface Scope {
   dt?: Obj;
   readonly ctx: Context;
 }
+/**
+ * Interface for a parent box that contains and manages child boxes.
+ */
 export interface BoxParent<CL = unk> extends Scope {
+  /** Fits and positions child box layout inside its parent element's CSS. */
   fitIn?(css: Properties, ly: CL, e: G, id: int): void;
+  /** Appends a rendered child box onto the parent for a given page index. */
   append(child: Box<CL>, pag: int): void;
+  /** Handles overflow calculation for a child box on a page. */
   overflow(child: iBox<CL>, pag: int): OFTp;
+  /** Custom list item element creation for list layouts. */
   listItem?(p: iP): G;
-  /**tag used for p element */
+  /** Tag used for the paragraph child element wrapper. */
   childTag?: keyof HTMLElementTagNameMap
 }
 
@@ -59,60 +68,73 @@ interface NDic<T> {
   start?: int;
   end?: int;
 }
+/**
+ * Special identifier values for document sections/parts.
+ */
 export const enum DTParts {
-  /**head */
+  /** Head section */
   h = -1,
-  /**foot */
+  /** Foot section */
   f = -2,
-  /**data (body) */
+  /** Data (body) section */
   bd = 0,
-  /**top */
+  /** Top section */
   t = -3,
-  /**bottom */
+  /** Bottom section */
   b = -4,
-  /** water mark */
+  /** Watermark section */
   w = -5,
-
 }
+
+/**
+ * Conversion units factor scaling relative to CSS pixels.
+ */
 export const enum units {
+  /** Centimeters scale factor */
   cm = 96 / 2.54,
+  /** Millimeters scale factor */
   mm = cm / 10,
+  /** Inches scale factor */
   in = 96,
+  /** Points scale factor */
   pt = 96 / 72,
+  /** Pixels base scale factor */
   px = 1
 }
-/* ************************************************************** */
-/* **************************INTERFACE*************************** */
-/* ************************************************************** */
 type Borders = [Border, Border, Border, Border] | Border;
 type BoxSpace = [int, int?, int?, int?];
 type TextVAlign = "baseline" | "sub" | "super"
 type Margin = [int | null, int | null, int | null, int | null];
 
+/**
+ * Styling configuration for inline text spans.
+ */
 export interface SpanStyle {
-  /**font family */
+  /** Font family style. */
   ff?: str;
-  /**font size */
+  /** Font size in pixels. */
   fs?: int;
-  /**bold */
+  /** Set to true for bold text. */
   b?: boolean;
-  /**italic */
+  /** Set to true for italic text. */
   i?: boolean;
-  /**underline */
+  /** Set to true for underline decoration. */
   u?: boolean;
-  /**strikethrough */
+  /** Set to true for line-through strikethrough decoration. */
   st?: boolean;
-
+  /** Set to true for subscript alignment. */
   sub?: boolean;
+  /** Set to true for superscript alignment. */
   sup?: boolean;
-
+  /** Text casing transform mode. */
   transform?: 'capitalize' | 'uppercase';
-  /**vertical align */
+  /** Vertical alignment style. */
   va?: TextVAlign;
-  /**color */
+  /** Foreground text color value. */
   cl?: str;
-  /**background */
+  /** Background color value. */
   bg?: str;
+  /** Prevents text wrapping if true. */
   nowrap?: bool
 }
 interface Shadow {
@@ -164,20 +186,23 @@ interface TextShadow {
   blur?: int;
   color?: str;
 }
-/**paragraph style */
+/**
+ * Styling configuration options for paragraphs.
+ */
 export interface PStyle {
-
+  /** Text drop shadows list. */
   shadow?: TextShadow[];
-  // mg?: int;
-  //paragraph properties
+  /** First-line indent offset in pixels. */
   indent?: int;
-  /**line height */
+  /** Custom line height multiplier. */
   lh?: int;
-  /**align */
+  /** Horizontal alignment option. */
   al?: Align;
-  // noWrap?: boolean
-  // overflow?: 'ellipsis' | 'clip';
 }
+
+/**
+ * Combined text styling spanning paragraph and inline properties.
+ */
 export type TextStyle = PStyle & SpanStyle;
 
 interface divisor<T> {
@@ -186,10 +211,6 @@ interface divisor<T> {
   first?: T;
   last?: T;
 }
-
-
-/* ************************************************************** */
-/* ***************************METHODS**************************** */
 
 const border = (b: Border) => isS(b) ? `1px ${b} #000` : `${b.width || 1}px ${b.style || 'solid'} ${b.color || "#000"}`;
 
@@ -280,7 +301,6 @@ function styleParagraph(style: PStyle, css: Properties) {
   if (style.shadow)
     css.textShadow = style.shadow.map(s => `${s.x}px ${s.y}px ${s.blur || 0}px ${s.color}`).join();
 
-  //paragraph
   if (style.indent)
     css.textIndent = `${style.indent}px`;
 
@@ -288,10 +308,6 @@ function styleParagraph(style: PStyle, css: Properties) {
     css.lineHeight = style.lh;
 
   style.al && (css.textAlign = align(style.al))
-  // if (style.noWrap) {
-  //   css.whiteSpace = 'nowrap';
-  //   css.textOverflow = style.overflow;
-  // }
   return css;
 }
 //existe 6 styles do tipo header
@@ -325,9 +341,6 @@ function styleText(style: SpanStyle, css: Properties) {
 function getCtx(exp: str, scp: Scope, pag: int) {
   let ctx = scp.ctx;
   if (exp) {
-    //while (!parent.dt)
-    //    parent = parent.p;
-    //..
     while (exp.startsWith('../')) {
       exp = exp.slice(3);
       let oldP: Scope;
@@ -346,7 +359,6 @@ function getCtx(exp: str, scp: Scope, pag: int) {
       data = ctx.calc(exp.slice(1), scp, pag);
       if (data == null)
         data = {};
-      //data[$parent] = parent.dt;
     } else {
       let split = exp.split('.');
       data = scp.dt;
@@ -363,14 +375,16 @@ interface CalcOpts {
   fn(name: str, args: any[]): any;
   vars(name: str, obj?: boolean): any;
 }
-// interface Settings {
-//   scalar?(value: int, fmt: str): any;
-
-// }
-// export const $: Settings = {}
 type CPU = (expression: str, scp: Scope, pag?: int) => any;
 type ExpFn = (this: { /**pag*/p: int, s: Scope }, ...args: any[]) => any;
-/** central processor unit */
+
+/**
+ * Creates and returns a Central Processor Unit function for evaluating expressions.
+ * 
+ * @param fn - The evaluation function callback.
+ * @param extraFn - Optional dictionary of additional helper functions.
+ * @returns An expression evaluation function.
+ */
 export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>): CPU {
   let
     funcs = <Dic<ExpFn>>{
@@ -378,7 +392,6 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       id() { return this.s.dt[$mapIndex]; },
       set(key: str, value) { return this.s.dt[key] = value },
       get(src, field) { return src[field]; },
-      //set and get data to temporary storage
       temp(k, v?) { return (this.s.ctx.temp ||= {})[k] = def(v, this.s.ctx.temp[k]) },
       delay(data: () => any) {
         let r = g("span").html(empty);
@@ -389,14 +402,6 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
       pag() { return this.p; },
       sum(v: any[], fn = v => v) { return v.reduce<int>((p, c) => p + fn(c), 0) },
       ...extraFn
-      //exchange(currency: str) {
-      //  if (!currency)
-      //    currency = (<any>this.s.ctx)._fOpts.currency;
-      //  return scalar.currencies().byKey(currency, 'code').value;
-      //},
-      //currency() {
-      //  return (<any>scp.ctx)._fOpts.currency;
-      //}
     };
 
   return (v: str, s: Scope, p?: int) => fn(v, {
@@ -415,34 +420,56 @@ export function cpu(fn: (exp: str, opts: CalcOpts) => any, extraFn?: Dic<ExpFn>)
 }
 
 //#endregion
+/**
+ * Styling theme containing all styling properties and presets for the document elements.
+ */
 export interface Theme {
+  /** Identifier key for the theme. */
   key?: str;
+  /** Base key fallback configuration. */
   base?: Key;
-  /**espacamento padrão das paginas */
+  /** Default padding space for document pages. */
   padding?: BoxSpace;
-  /**header size */
+  /** Target pixel height for the page header. */
   hdSize?: int;
-
-  /**footer size */
+  /** Target pixel height for the page footer. */
   ftSize?: int;
-
+  /** Default typography settings for standard text. */
   text?: TextStyle;
-
-  /**paragraph style, include default style for text in paragraph */
+  /** Map of paragraph formatting style presets. */
   p?: Dic<TextStyle & { title?: str }>;
+  /** Map of box/container formatting style presets. */
   box?: Dic<BoxStyle & { title?: str }>;
+  /** Human readable title of the theme. */
   title?: str;
+  /** Additional description or metadata info. */
   info?: str;
-
-  //#region extensions
+  /** Horizontal rule styling specifications. */
   hr?: Dic<HrStyle>;
-  /**table style, include text in table */
+  /** Table styling configurations. */
   tables?: Dic<TableStyle>;
-  //#endregion
 }
 
+/**
+ * Instantiates a concrete Box instance based on the layout item definition.
+ * 
+ * @param i - The input box structure design.
+ * @param p - The parent container element.
+ * @param id - Optional numeric identifier index.
+ * @returns Concrete Box class instance.
+ */
 export const create = <T>(i: iBox<T>, p: BoxParent<any>, id?: int) =>
   Reflect.construct(boxes[i.tp || 'p'], [i, p, id]) as Box;
+
+/**
+ * Helper utility to instantiate and render a box (or string content) onto a target page index.
+ * 
+ * @param box - The target element definition schema or a raw string content.
+ * @param pag - Current active page number.
+ * @param id - Numeric block identifier.
+ * @param parent - The parent container rendering this element.
+ * @returns The final page number index after rendering.
+ */
 export function write<T>(box: iBoxes<T> | str, pag: int, id: int, parent: BoxParent<any>): int {
   if (isS(box)) {
     box = { bd: box };
@@ -474,19 +501,22 @@ interface BoxRoot extends IBookContext {
   //context: RootContext
 }
 
-/** ************************************************************* */
-/** ****************************SPAN***************************** */
-/** ************************************************************* */
-
+/**
+ * Base layout structure for inline span elements.
+ */
 export interface iSpan<S = any> {
+  /** Inline span type. */
   tp?: ST;
-
-  /**style */
+  /** Inline styling properties or theme style key. */
   is?: S;
 }
+
+/**
+ * Text inline span element layout configuration.
+ */
 export interface iText extends iSpan<SpanStyle> {
   tp?: "t";
-  /**data */
+  /** The text string data content. */
   bd?: str;
 }
 interface iExp extends iSpan<SpanStyle> {
@@ -496,17 +526,30 @@ interface iExp extends iSpan<SpanStyle> {
   /**data */
   bd?: str | SpanExp;
 }
+/**
+ * Image sizing configuration representing explicit dimensions or scaling mode.
+ */
 export type ImgSize = float | [w: float | "", h: float | ""] | 'w' | 'h';
+
+/**
+ * Image content layout specification.
+ */
 export interface IImg {
   tp: "img";
+  /** Sizing format. */
   sz?: ImgSize;
+  /** Image source path/URI. */
   bd: str;
-  // pars: Dic<str>;
+  /** Set to true to evaluate bd dynamically as an expression. */
   calc?: bool;
 }
-type iImgSpan = iSpan<ImgStyle> & IImg;
-type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int/*, edit: boolean*/) => G
 
+type iImgSpan = iSpan<ImgStyle> & IImg;
+type Span<T extends iSpan = iSpan> = (i: T, p: P, pag: int) => G
+
+/**
+ * Resolver mapping containing methods to render inline span components.
+ */
 export const spans: Dic<Span> = {
   t: <Span<iText>>(({ is, bd }) => {
     let t = g('span');
@@ -515,7 +558,6 @@ export const spans: Dic<Span> = {
   }),
   e: <Span<iExp>>(({ bd, is }, p, pag) => {
     let v: any = isS(bd) ? p.ctx.calc(bd, p, pag) : bd(p.dt, p, pag);
-    // fmt && (v = p.ctx.fmt(v, fmt));
     if (v || v === 0) {
       let t = g('span', 0, v);
       is && t.css(styleText(is, {}));
@@ -537,26 +579,29 @@ export const spans: Dic<Span> = {
     }).css(css);
   })
 };
+
+/**
+ * Union type covering all valid inline span element definitions.
+ */
 export type iSpans = iText | iExp | iImgSpan;
 
-/** ************************************************************* */
-/** *************************** BOX ***************************** */
-/** ************************************************************* */
+/**
+ * Core interface defining the configuration schema for a layout box component.
+ */
 export interface iBox<L = unk> {
+  /** The controller Box instance bound to this layout definition. */
   $?: Box<L, any>;
-
-  /**inline style: Estilo interno */
+  /** Inline style overrides to apply directly onto the element. */
   is?: unknown;
-  /**style: nome do estilo no theme que este item usara */
+  /** Preset key referencing a styling rule defined in the active theme. */
   s?: str;
-
+  /** The box component type tag name identifier (e.g. 'p', 'd', 'col'). */
   tp?: str;
-  /**layout : informação que este elemento passa para o seu parent para ele definir no css */
+  /** Layout parameter options passed up to parent layout resolver. */
   ly?: L;
-
-  /**Closure: o escopo é usado pela formula para saber o objecto base de onde tirar as variaveis */
+  /** Context scope formula string specifying variables source path. */
   sc?: str;
-  /**validator: if this return false element is not renderized */
+  /** Validation expression; element is only rendered if evaluation returns truthy. */
   vl?: str;
 }
 abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
@@ -610,6 +655,9 @@ abstract class Box<L = unk, T extends iBox<L> = iBox<L>> implements Scope {
   /**self style */
   abstract ss(v: Properties): void;
 }
+/**
+ * Class representation type for layout box controllers.
+ */
 export type BoxT<L = unknown> = Box<L>;
 interface iSBox<L = unknown> extends iBox<L> {
 }
@@ -664,8 +712,18 @@ abstract class MBox<L = unk, T extends iMBox<L> = any> extends Box<L, T> {
   protected abstract data(pag: int): void;
 }
 type SpanExp = (ctx: any, p: P, pag: int) => str | G
+
+/**
+ * Union type representing valid formats for span sequence layout definitions.
+ */
 export type ASpan = (iSpans | str | SpanExp)[] | str | iSpans | SpanExp;
-// box[0] == '=' ? [{ tp: "e", bd: box.slice(1) }] : 
+
+/**
+ * Normalizes span data into a strict array format of span configurations.
+ * 
+ * @param v - Input span content definition format.
+ * @returns Normalized array of inline span element schemas.
+ */
 export const span = (v: ASpan) => v ? arr(v).map<iSpans>(v =>
   isS(v) ?
     v[0] == '=' ?
@@ -675,13 +733,18 @@ export const span = (v: ASpan) => v ? arr(v).map<iSpans>(v =>
       { tp: "e", bd: v } :
       v
 ) : [];
+/**
+ * Paragraph component layout definition structure.
+ */
 export interface iP<L = unk> extends iMBox<L> {
   tp?: "p",
+  /** The controller P instance bound to this layout definition. */
   $?: P<L>,
+  /** Paragraph-specific inline style overrides. */
   is?: PStyle;
-  /**list index */
+  /** Custom index number for list items. */
   li?: int;
-  /**body */
+  /** Body content of the paragraph (string, expression, or child spans). */
   bd?: ASpan;
 }
 class P<L = unk> extends MBox<L, iP<L>> {
@@ -777,35 +840,48 @@ class P<L = unk> extends MBox<L, iP<L>> {
     return pag;
   }
 }
+
+/** Class representation type for paragraph controllers. */
 export type PT = P;
+
 interface BlockList extends SpanStyle {
-  /**@deprecated */
+  /** @deprecated */
   indent?: int;
-  /**format */
+  /** Format of block items. */
   fmt?: str;
 }
+
+/**
+ * Union layout representing single block or list of block components.
+ */
 export type ABoxes<L = unk> = iBoxes<L> | iBoxes<DivLy>[];
 interface iParentBase<L = unknown> extends iMBox<L> {
   $?: Parent<L, any>;
   l?: BlockList;
   is?: BoxStyle;
-  /**map: deve repetir a data usando o context */
+  /** Set to true to repeat data mapping over the bound context. */
   map?: bool;
-  /**header */
+  /** Optional header block content elements. */
   hd?: ABoxes;
-
-  /**body */
+  /** Body block elements array. */
   bd?: iBoxes[];
-
-  /**footer */
+  /** Optional footer block content elements. */
   ft?: ABoxes;
-  /**usado so quando tiver map e não tiver nenhum item */
+  /** Fallback element to render when body dataset mapping is empty. */
   empty?: iBoxes;
 }
+
+/**
+ * Interface defining layout options for components acting as containers (parents).
+ */
 export interface iParent<L = unk, CL = unk> extends iParentBase<L> {
+  /** Header block elements matching child type CL. */
   hd?: ABoxes<CL>;
+  /** Body block elements matching child type CL. */
   bd?: iBoxes<CL>[];
+  /** Footer block elements matching child type CL. */
   ft?: ABoxes<CL>;
+  /** Empty fallback block elements matching child type CL. */
   empty?: iBoxes<CL>;
 }
 const bparse = <T>(v: T, k: keyof T): iBoxes => isA(v[k]) ? v[k] = <any>{ tp: "d", bd: v[k] } : v[k];
@@ -899,7 +975,7 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
   //protected abstract part(index: int): m.S;
   break(child: iBox<CL>, index: int) {
     let i = this.i;
-    //não deve quebrar se for o header ou footer a pedir
+    // Do not break if requested by header or footer section
     if (isN(child.$.id) && !i.ub) {
       return true;
     }
@@ -956,6 +1032,8 @@ abstract class Parent<L = unk, CL = unk, T extends iParentBase<L> = iParent<L, C
     super.clearData();
   }
 }
+
+/** Class representation type for container box controllers. */
 export type ParentT = Parent;
 
 interface BlockColumn {
@@ -964,15 +1042,18 @@ interface BlockColumn {
   count?: int;
   gap?: int;
 }
+/** Layout options configuration for Div child elements. */
 export interface DivLy {
-  /**is list item */
+  /** Indicates if the box represents a list item. */
   li?: boolean;
-  /**Margin in pixels*/
+  /** Margin space in pixels. */
   mg?: float | [top: float, bottom: float];
 }
 
+/** Div container box layout specification. */
 export interface iDiv<L = unk> extends iParent<L, DivLy> {
   tp: "d"
+  /** Column layout parameters if multi-column display is enabled. */
   cols?: BlockColumn;
 }
 class Div<L = unk> extends Parent<L, DivLy, iDiv<L>> {
@@ -1002,8 +1083,13 @@ class Div<L = unk> extends Parent<L, DivLy, iDiv<L>> {
     }
   }
 }
+
+/** Class representation type for Div controllers. */
 export type BlockT = Div;
+
+/** Alphanumeric text horizontal alignment casing tags. */
 export type Align = "e" | "s" | "c" | "j" | "l" | "r" | "end" | "start" | "center" | "justify" | "left" | "right";
+
 function align(v: Align) {
   switch (v) {
     case "e": return "end";
@@ -1054,14 +1140,16 @@ function fLy(ly: FlexLy, css: Properties, v0: "Top" | "Left", v1: "Bottom" | "Ri
     css[`margin${v1}`] = b === "" ? "auto" : b + "px"
   }
 }
+/** Column child alignment and margin layout options. */
 export interface CLy extends FlexLy {
 }
+
+/** Column container layout specification. */
 export interface iCol<L = unk> extends iParent<L, CLy> {
   tp: "col",
-  /**padding */
-  // pad?: int[];
-  /**bottom to top */
+  /** Set to true to reverse element rendering order from bottom-to-top. */
   btt?: boolean;
+  /** Primary horizontal alignment. */
   align?: Align;
 }
 class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
@@ -1106,14 +1194,13 @@ class Col<L = unk> extends Parent<L, CLy, iCol<L>> {
   }
 }
 
+/** Row child alignment and margin layout options. */
 export interface RLy extends FlexLy {
-
-  // grow?: int;
 }
+
+/** Row container layout specification. */
 export interface iRow<L = unk> extends iParent<L, RLy> {
   tp: "row";
-  /**padding */
-  // pad?: int[];
 }
 class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
   ss(css: Properties) {
@@ -1142,7 +1229,6 @@ class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
     part.add(ch.part(pag));
   }
   break(child: iBox<RLy>, index: int) {
-    //todo: corta todos os childs
     return super.break(child, index);
   }
   fitIn(css: Properties, ly: CLy) {
@@ -1153,53 +1239,53 @@ class Row<L = unk> extends Parent<L, RLy, iRow<L>> {
   }
 }
 
-/* ************************************************************** */
-/* ****************************TABLE***************************** */
-/* ************************************************************** */
-
 interface TableStyle extends BoxStyle {
-  /**style for child in the body */
+  /** style for child in the body */
   bd?: BoxStyle;
-  /**style for child in the header */
+  /** style for child in the header */
   hd?: BoxStyle;
-  /**style for child in the footer */
+  /** style for child in the footer */
   ft?: BoxStyle;
-
   col?: BoxStyle;
-  /**first row */
+  /** first row */
   fr?: BoxStyle;
-  /**first column */
+  /** first column */
   fc?: BoxStyle;
-
-  /**last row */
+  /** last row */
   lr?: BoxStyle;
-  /**last column */
+  /** last column */
   lc?: BoxStyle;
-
-  /**(odd row)linhas impar */
+  /** (odd row) lines odd */
   or?: BoxStyle;
-
-  /**(odd column)colunas impar */
+  /** (odd column) columns odd */
   oc?: BoxStyle;
 }
-interface TableLayout {
 
-}
 interface TbCellObj {
-  /**size */
+  /** size */
   sz?: float;
 }
+
+/** Table column configuration metadata representing cell styling or relative width. */
 export type TbColInfo = TbCellObj | float;
 
+/** Alignment orientation axis format: horizontal ('h') or vertical ('v'). */
 export type Ori = "h" | "v";
+
+/** Table component layout specification. */
 export interface iTb<L = unk> extends iParentBase<L> {
   tp: "tb";
+  /** Table styling overrides. */
   is?: TableStyle;
+  /** Table header row container element. */
   hd?: iTr;
-  bd?: (iTr)[]//(iTr | iBoxes<TrLy>[])[];
+  /** Table body rows array. */
+  bd?: (iTr)[];
+  /** Table footer row container element. */
   ft?: iTr;
+  /** Fallback row displayed when table is empty. */
   empty?: iTr;
-  /**columns */
+  /** Columns definition metadata configurations. */
   cols?: TbColInfo[];
 }
 class Tb<L = unk> extends Parent<L, void, iTb<L>> {
@@ -1230,23 +1316,26 @@ class Tb<L = unk> extends Parent<L, void, iTb<L>> {
   fitIn() { }
 }
 
+/** Layout options configuration for table row cell elements. */
 export interface TrLy {
-  /**row span */
+  /** Number of columns spanned by the cell. */
   span?: int;
-  /**margin top*/
+  /** Top margin space. */
   mt?: int;
-  /**margin left*/
+  /** Left margin space. */
   ml?: int;
-  /**margin right*/
+  /** Right margin space. */
   mr?: int;
-  /**margin bottom*/
+  /** Bottom margin space. */
   mb?: int;
 }
 
-/* ****************************TROW***************************** */
+/** Table row layout specification. */
 export interface iTr<L = void> extends iSBox<L> {
   tp: "tr";
+  /** Child cell block elements array. */
   bd?: iBoxes<TrLy>[];
+  /** Row styling options overrides. */
   is?: BoxStyle;
 }
 /**column size */
@@ -1348,30 +1437,25 @@ class Tr<L = void> extends SBox<L, iTr<L>> implements BoxParent<L> {
 }
 
 
-/* ************************************************************** */
-/* ****************************GRID****************************** */
-/* ************************************************************** */
 interface GridRowLayout {
-  /**column span */
+  /** column span */
   cspan?: int;
-  /**top, right, bottom, left */
+  /** top, right, bottom, left */
   margin?: Margin;
-
   break?: boolean;
 }
+
 interface GridLy extends GridRowLayout {
-  /**column */
+  /** column */
   c: int;
-
-  /**row span */
+  /** row span */
   rspan?: int;
-
-  /**row */
+  /** row */
   r: int;
 }
+
 interface iGrid<L = unk> extends iParent<L, iBoxes<GridLy>> {
   tp: "grid";
-  //orientation: ui.Orientation;
   gap: BoxSpace;
   cols: any[];
   rows: any[];
@@ -1401,9 +1485,6 @@ class GridBox<L = unk> extends Parent<L, GridLy, iGrid<L>> {
   }
 }
 
-/* ************************************************************** */
-/* ***************************GRAPHIC**************************** */
-/* ************************************************************** */
 interface GraphicStyle {
 
 }
@@ -1418,11 +1499,10 @@ class Graphic<L = unk> extends SBox<L, iGraphic<L>> {
   }
 }
 
-/* ************************************************************** */
-/* ****************************SYMBOL**************************** */
-/* ************************************************************** */
+/** Placeholder container box component layout specification. */
 export interface iPH<T = any> extends iMBox<T> {
   tp: "ph";
+  /** Formula expression string resolving the template content. */
   bd: str;
 }
 class PH<L = unk> extends MBox<L, iPH<L>> {
@@ -1438,9 +1518,8 @@ class PH<L = unk> extends MBox<L, iPH<L>> {
     let t = write(this.bd, pag, this.id, this.p);
     let $ = this.bd.$;
     for (let i = $.start; i <= $.end; i++)
-      this.parts[i] = $.part(i)// this.bd.$.parts[part];
+      this.parts[i] = $.part(i)
 
-    // for (let part in .parts)
     return t;
   }
   transport() {
@@ -1457,13 +1536,14 @@ class PH<L = unk> extends MBox<L, iPH<L>> {
   }
 }
 
-/* ************************************************************** */
-/* ****************************HR******************************** */
-/* ************************************************************** */
 interface HrStyle extends BorderObj { }
+
+/** Horizontal rule container box layout specification. */
 export interface iHr<L = unk> extends iBox<L> {
   tp: "hr";
+  /** Horizontal rule styling overrides. */
   is?: HrStyle,
+  /** Layout orientation (axis format). */
   o?: Ori;
 }
 class Hr<L = unk> extends SBox<L, iHr<L>> {
@@ -1489,9 +1569,13 @@ class NP<L = unk> extends SBox<L, iNP<L>> {
   }
 }
 
+/** Image container box layout specification. */
 export type iImgBox<L = unk> = iBox<L> & IImg & {
+  /** Image element styling configuration. */
   is?: ImgStyle;
+  /** Alignment mode options. */
   al?: "center";
+  /** The controller ImgBox instance bound to this layout. */
   $?: ImgBox<L>;
 };
 class ImgBox<L = unk> extends SBox<L, iImgBox<L>> {
@@ -1510,14 +1594,14 @@ class ImgBox<L = unk> extends SBox<L, iImgBox<L>> {
     return g('img', { src: def(ctx.img?.(i.bd), i.bd) });
   }
 }
-/* ************************************************************** */
-/* ****************************RENDER**************************** */
-/* ************************************************************** */
+/** Union type representing container parent layout component definition formats. */
 export type iPBoxes<L = any> =
   iDiv<L> |
   iCol<L> |
   iRow<L> |
   iTb<L>;
+
+/** Union type representing any valid box layout component design format. */
 export type iBoxes<L = any> =
   iP<L> |
   iPBoxes<L> |
@@ -1528,22 +1612,34 @@ export type iBoxes<L = any> =
   iGrid<L> |
   iGraphic<L> |
   iTr<L>;
-export interface Book {
-  hd?: iBoxes<SideLayout>;
-  bd: ABoxes;
-  ft?: iBoxes<SideLayout>;
 
-  // fill?: bool;
-  /**padding */
-  // pad?: BoxSpace;
+/** Interface representing the full Document Book layout. */
+export interface Book {
+  /** Optional header layout structure. */
+  hd?: iBoxes<SideLayout>;
+  /** Document body contents layout. */
+  bd: ABoxes;
+  /** Optional footer layout structure. */
+  ft?: iBoxes<SideLayout>;
+  /** Optional watermark content element. */
   wm?: iP<WMLayout>;
 }
-/** */
+
+/** Watermark layout config. */
 export interface WMLayout {
   tp?;
 }
 
+/** Union layout representing raw input formats for simple template rendering. */
 export type sbInput<L = void> = str | ABoxes<L>;
+
+/**
+ * Standard utility function rendering simple input blocks into DOM elements.
+ * 
+ * @param bd - Raw text content or elements sequence structure.
+ * @param ctx - Active global document formatting context.
+ * @returns Renders and returns G-wrapped element wrapper.
+ */
 export function render(bd: sbInput, ctx: Context) {
   if (!bd)
     return null;
@@ -1557,6 +1653,15 @@ export function render(bd: sbInput, ctx: Context) {
   return r;
 }
 
+/**
+ * Renders document books onto a set of responsive page sheets.
+ * 
+ * @param ctx - Active global document formatting context.
+ * @param container - Factory callback returning active wrapper element per page number.
+ * @param bk - Full document Book design layout.
+ * @param w - Page width metric in millimeters.
+ * @returns Renders and returns final container factory object.
+ */
 export function sheet(ctx: Context, container: (pag: int) => G, bk: Book, w: int) {
   write(bparse(bk, "bd"), 1, DTParts.bd, {
     ctx,
@@ -1594,7 +1699,6 @@ export function sheet(ctx: Context, container: (pag: int) => G, bk: Book, w: int
         write(bk.wm, pag, DTParts.b, p);
         bk.wm.$.clear();
       }
-      //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
     }
   });
   if (ctx.wait)
@@ -1603,6 +1707,16 @@ export function sheet(ctx: Context, container: (pag: int) => G, bk: Book, w: int
   return container;
 }
 
+/**
+ * Renders pagination-aware multi-page sheets with header and footer size control.
+ * 
+ * @param ctx - Active global document formatting context.
+ * @param container - Factory callback returning active wrapper element per page number.
+ * @param bk - Full document Book design layout.
+ * @param w - Page width metric in millimeters.
+ * @param h - Page height metric in millimeters.
+ * @returns Renders and returns final container factory object.
+ */
 export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: int, h: int) {
   let height: int;
   let { hdSize: hs, ftSize: fs, text, padding: pad } = ctx.theme;
@@ -1610,8 +1724,7 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
   write(bparse(bk, "bd"), 1, DTParts.bd, {
     ctx,
     dt: ctx.dt,
-    fitIn: css => css.minHeight = `calc(100% - ${hs + fs}px)`,//(bk.fill && ()),
-    // assign(css, { marginTop: 0, marginBottom: 0 })
+    fitIn: css => css.minHeight = `calc(100% - ${hs + fs}px)`,
     overflow: (child, pag: int) =>
       Math.max(Math.floor(child.$.part(pag).e.offsetHeight) - height, OFTp.in),
     append(ch, pag) {
@@ -1632,8 +1745,6 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
         .css({
           background: "#fff",
           width: `${w}mm`,
-          // !GAMBIARRA
-          // minHeight: !h && "300mm",
           height: h ? `${h}mm` : null,
           padding: space(pad),
           whiteSpace: 'pre-wrap',
@@ -1665,7 +1776,6 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
         write(bk.wm, pag, DTParts.b, p);
         bk.wm.$.clear();
       }
-      //[div, bd] = pag(ctx, bk, w, h, currentPag = index);
     }
   });
   if (ctx.wait)
@@ -1674,6 +1784,13 @@ export function sheets(ctx: Context, container: (pag: int) => G, bk: Book, w: in
   return container;
 }
 
+/**
+ * Post-processes page wrappers to group pairs into horizontal double-sheets.
+ * 
+ * @param container - Target container holding page sheets.
+ * @param w - Page width in pixels.
+ * @returns Updated container with grouped double sheets.
+ */
 export function dblSheets(container: G, w: int) {
   let t = container.childs().remove();
   for (let i = 0; i < t.length; i += 2) {
@@ -1691,36 +1808,47 @@ export function dblSheets(container: G, w: int) {
   return container;
 }
 
+/** Tuple representing width and height dimensions mapping in millimeters. */
 export type Sz = [w: int, h: int]
+
+/** Presets of standard media dimensions in millimeters. */
 export const medias = {
   A4: <Sz>[210, 297],
   A5: <Sz>[148, 210],
   A3: <Sz>[297, 420],
 }
+
+/** Page size key standard mapping formats. */
 export type PageSize = keyof (typeof medias);
+
+/**
+ * Triggers standard browser print layout, appending styled sheet elements onto body.
+ * 
+ * @param container - Element holding standard page sheets.
+ * @param size - Standard size page name.
+ * @param cb - Print execution callback task.
+ */
 export async function print(container: G, size: str, cb: () => Task<void>) {
-  let pags = container.childs()//.css({ display: "block" }, true);.uncss(["padding"]),
-  let style = g('style', null, `body{background:#fff!important}body>:not(._.sheet){display:none!important}@page{size:${size};margin:0}`);//${space(theme.padding)}
+  let pags = container.childs();
+  let style = g('style', null, `body{background:#fff!important}body>:not(._.sheet){display:none!important}@page{size:${size};margin:0}`);
 
   g(document.body).add(pags);
   style.addTo(document.head);
   window.addEventListener("afterprint", () => {
     style.remove();
-    container.add(pags);//.uncss(["display"])//.css({ padding: space(theme.padding) })
+    container.add(pags);
   }, { once: true });
   await cb();
 }
 
 interface WaterMark {
-  dt/*: m.Child*/;
+  dt;
 }
 
+/** Callback format mapping layout component parameters on active page calculation. */
 export type MediaType = (child: iBoxes, pag: int) => any;
 
-/* ************************************************************** */
-/* *****************************COLLECTIONS********************** */
-/* ************************************************************** */
-
+/** Mapping constructor dictionary covering Box tag names to concrete Box classes. */
 export const boxes: Dic<{ new(i, p: BoxParent<any>, id: int): Box<any, any>; }> = {
   p: P,
   d: Div,
@@ -1738,6 +1866,13 @@ export const boxes: Dic<{ new(i, p: BoxParent<any>, id: int): Box<any, any>; }> 
   tr: Tr,
 };
 
+/**
+ * Extends target object deep properties mapping recursively.
+ * 
+ * @param dest - Destination properties target.
+ * @param src - Source configuration overrides structure.
+ * @returns Blended target specifications block.
+ */
 export function deepExtend<T, U>(dest: T, src: U): T & U
 export function deepExtend<T>(dest: Partial<T>, src: Partial<T>): T
 export function deepExtend(dst: Dic, src: Dic) {
@@ -1751,6 +1886,13 @@ export function deepExtend(dst: Dic, src: Dic) {
     }
   return dst;
 }
+
+/**
+ * Creates and returns standard print theme settings blending optional config parameters.
+ * 
+ * @param prot - Optional preset configurations.
+ * @returns Fully blended Theme structure.
+ */
 export const createTheme = (prot?: Partial<Theme>) => {
   return deepExtend<Theme>({
     padding: [7 * units.mm, 10 * units.mm],
@@ -1801,24 +1943,17 @@ export const createTheme = (prot?: Partial<Theme>) => {
           width: 1
         },
         pd: [7 * units.pt, 5 * units.pt],
-        // mg: [4 * units.pt, 2 * units.pt],
         rd: 5
       },
       filled: {
         pd: [3 * units.pt, 2 * units.pt],
-        // mg: [2 * units.pt, 1 * units.pt],
         rd: 1,
         tx: "strong",
         bg: { dt: "#DDD" },
         br: { color: "#333", width: 2 },
-        // bg: {
-        //   tp: 'color',
-        //   dt: "#444"
-        // }
       },
       blank: {
         pd: [7 * units.pt, 5 * units.pt],
-        // mg: [4 * units.pt, 2 * units.pt],
         rd: 2,
         tx: "black",
         bg: {
@@ -1846,7 +1981,6 @@ export const createTheme = (prot?: Partial<Theme>) => {
     },
     tables: {
       '': {
-        // mg: [2 * units.pt, 1 * units.pt],
         hd: {
           tx: 'strong',
           bg: { dt: "#DDD" },
